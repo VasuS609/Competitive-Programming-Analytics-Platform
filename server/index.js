@@ -4,7 +4,9 @@ const dotenv = require('dotenv');
 const run = require('./services/cfService');
 const {fetchRatingHistory} = require('./services/cfService');
 const {addProblem, getProblemsByDate, getGoalProgress} = require('./services/problemService');
+const { getLCStats } = require('./services/lcService');
 
+const router = express.Router();
 
 dotenv.config();
 
@@ -97,6 +99,18 @@ app.get('/api/cf/rating/:handle', async(req, res) => {
     res.status(500).json({
       error:'Failed to fetch rating history'
     });
+  }
+})
+
+app.get('/api/leetcode/stats/:handle', async(req, res) => {
+  try{
+    const data = await  getLCStats(req.params.handle);
+    res.json(data);
+  }catch(e){
+    console.log(e);
+    res.status(501).json({
+      error: 'Failed to fetch rating history'
+    })
   }
 })
 

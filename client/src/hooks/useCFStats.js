@@ -20,7 +20,7 @@ export function useCFStats(handle){
         .catch((e) => {
             setError(e);
             setLoading(false);
-            console.error('Unexpected error occured: ', e);
+            console.error('Unexpected error occured while fetching Codeforces Stats: ', e);
         })
 
     }, [handle])

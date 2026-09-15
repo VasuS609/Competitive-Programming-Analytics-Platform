@@ -16,3 +16,9 @@
     5. deduping the fetched data, filtering unique submission and mapping recently successful resubmission (if any)
     6. finding the submission size of unique map
     7. logging data and 3 recently submitted questions data
+
+
+# MileStone 6:
+    Express backend with cached CF stats + rating history
+SQLite-backed problem tracking with a configurable goals system
+React dashboard: live CF profile, goal progress, a form to log solves, and a real rating trend chart
