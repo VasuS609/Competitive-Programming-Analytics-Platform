@@ -6,7 +6,7 @@ async function getCFStats(handle){
     const cached =  cache[handle];
 
     if(cached && Date.now() < cached.expiresAt){
-        console.log('Cache Hit: for', handle);
+        console.log('codeforces Cache Hit: for', handle);
         return cached.data;
 
     }else{

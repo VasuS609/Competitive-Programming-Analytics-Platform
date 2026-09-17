@@ -1,8 +1,7 @@
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useState} from "react";
 
 
-export function useLeetcodeStats(handle){
+export function useLeetcodeStats({handle}){
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [data, setData] = useState(null);
@@ -11,6 +10,7 @@ export function useLeetcodeStats(handle){
         fetch(`http://localhost:5000/api/leetcode/stats/${handle}`)
         .then((res) =>{
             if(!res.ok) throw new Error('Error while fetching Leetcode Stats');
+            return res.json();
         })
         .then((json)=>{
             setData(json);

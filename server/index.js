@@ -5,8 +5,15 @@ const run = require('./services/cfService');
 const {fetchRatingHistory} = require('./services/cfService');
 const {addProblem, getProblemsByDate, getGoalProgress} = require('./services/problemService');
 const { getLCStats } = require('./services/lcService');
+const { fetchCodeChefData } = require('./services/codechefService');
 
-const router = express.Router();
+
+const { default: rateLimit } = require("express-rate-limit");
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
+})
 
 dotenv.config();
 
@@ -119,3 +126,21 @@ const port = process.env.PORT || 5000;
 app.listen(port, () => {
     console.log(`Server is running on port: ${port}`);
 })
+
+app.get('/api/data/codechef', async (req, res) => {
+  const { handle } = req.query;
+
+  if (!handle) {
+    return res.status(400).json({ error: 'CodeChef handle is required' });
+  }
+
+  try {
+    const data = await fetchCodeChefData(handle);
+    res.json(data);
+  } catch (e) {
+    console.error(e);
+    res.status(e.status === 404 ? 404 : 500).json({
+      error: e.message || 'Failed to fetch CodeChef data'
+    });
+  }
+});

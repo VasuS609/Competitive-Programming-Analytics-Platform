@@ -30,13 +30,24 @@ async function getCompleteUserData(handle) {
 
 async function getLCStats(handle) {
     const cached = cache[handle];
+
     if(cached && Date.now() < cached.expiresAt){
+        console.log('leetcode cache hit for: ', handle);
         return cached.data;
     }
+    else
+    {
+        console.log('leetcode cache miss for: ', handle);
+        const data = await getCompleteUserData(handle);
 
-    const data = await getCompleteUserData(handle);
-    cache[handle] = {data, expiresAt: Date.now() + 10  * 60 * 1000};
-    return data;
+        cache[handle] = {
+            data, expiresAt: Date.now() + 10  * 60 * 1000
+        };
+        
+        return data;        
+    }
+
+
 }
 
 module.exports = { getLCStats };
