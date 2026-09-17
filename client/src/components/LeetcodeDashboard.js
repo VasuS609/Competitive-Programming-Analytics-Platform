@@ -24,3 +24,5 @@ function LeetcodeDashboard({handle}){
         </div>
     )
 }
+
+export default LeetcodeDashboard;
