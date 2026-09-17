@@ -2,24 +2,6 @@
 
 const cache = {};
 
-async function getCFStats(handle){
-    const cached =  cache[handle];
-
-    if(cached && Date.now() < cached.expiresAt){
-        console.log('codeforces Cache Hit: for', handle);
-        return cached.data;
-
-    }else{
-        console.log('chache miss... fetching fresh data for', handle);
-        const data = await fetchFromCF(handle);
-        cache[handle] = {
-            data,
-            expiresAt: Date.now() + 10*60*1000
-        }
-        return data;
-    }   
-}
-
 async function fetchFromCF(handle){
 
     const [userSubmission, userProfile] = await Promise.all([
@@ -88,6 +70,24 @@ async function fetchRatingHistory(handle) {
     })
 
     return data;
+}
+
+async function getCFStats(handle){
+    const cached =  cache[handle];
+
+    if(cached && Date.now() < cached.expiresAt){
+        console.log('codeforces Cache Hit: for', handle);
+        return cached.data;
+
+    }else{
+        console.log('chache miss... fetching fresh data for', handle);
+        const data = await fetchFromCF(handle);
+        cache[handle] = {
+            data,
+            expiresAt: Date.now() + 10*60*1000
+        }
+        return data;
+    }   
 }
 
 async function run(handle){

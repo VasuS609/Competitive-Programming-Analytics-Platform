@@ -1,5 +1,7 @@
 const { JSDOM } = require("jsdom");
 
+const cache = {};
+
 async function fetchCodeChefData(handle) {
   const response = await fetch(`https://www.codechef.com/users/${encodeURIComponent(handle)}`);
 
@@ -32,9 +34,9 @@ async function fetchCodeChefData(handle) {
   return {
     success: true,
     status: response.status,
-    profile: profile?.children[0]?.children[0]?.src,
     name: profile?.children[0]?.children[1]?.textContent?.trim(),
     currentRating: parseInt(rating?.textContent, 10) || 0,
+    problemSolved: parseInt(rating?.parentNode?.children[2]?.textContent?.split("Problems Solved")[1], 10) || 0,
     highestRating: parseInt(rating?.parentNode?.children[4]?.textContent?.split("Rating")[1], 10) || 0,
     countryFlag: countryFlag?.src,
     countryName: countryName?.textContent?.trim(),
@@ -46,4 +48,24 @@ async function fetchCodeChefData(handle) {
   };
 }
 
-module.exports = { fetchCodeChefData };
+
+async function getCodeChefStats(handle) {
+    const cached = cache[handle];
+
+    if (cached && Date.now() < cached.expiresAt) {
+        console.log('CodeChef Cache Hit: for', handle);
+        return cached.data;
+    }
+    else
+    {
+        console.log('Cache miss... fetching fresh data for', handle);
+        const data = await fetchCodeChefData(handle);
+        cache[handle] = {
+            data,
+            expiresAt: Date.now() + 10 * 60 * 1000
+        };
+        return data;
+    }
+}
+
+module.exports = { getCodeChefStats };

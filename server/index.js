@@ -2,10 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const run = require('./services/cfService');
+
 const {fetchRatingHistory} = require('./services/cfService');
 const {addProblem, getProblemsByDate, getGoalProgress} = require('./services/problemService');
 const { getLCStats } = require('./services/lcService');
-const { fetchCodeChefData } = require('./services/codechefService');
+const { getCodeChefStats } = require('./services/codechefService');
 
 
 const { default: rateLimit } = require("express-rate-limit");
@@ -127,19 +128,20 @@ app.listen(port, () => {
     console.log(`Server is running on port: ${port}`);
 })
 
-app.get('/api/data/codechef', async (req, res) => {
-  const { handle } = req.query;
+
+app.get('/api/data/codechef/:handle', async (req, res) => {
+  const { handle } = req.params;
 
   if (!handle) {
     return res.status(400).json({ error: 'CodeChef handle is required' });
   }
 
   try {
-    const data = await fetchCodeChefData(handle);
+    const data = await getCodeChefStats(handle);
     res.json(data);
   } catch (e) {
     console.error(e);
-    res.status(e.status === 404 ? 404 : 500).json({
+    res.status( 502 ).json({
       error: e.message || 'Failed to fetch CodeChef data'
     });
   }
