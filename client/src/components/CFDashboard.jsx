@@ -1,4 +1,5 @@
 import {useCFStats} from "../hooks/useCFStats";
+import SubmissionCalendar from "./SubmissionCalendar";
 
 function CFDashboard({handle}){
     const {data, loading, error} = useCFStats(handle);
@@ -22,6 +23,7 @@ function CFDashboard({handle}){
             <p>Rank: {data.rank}</p>
             <p>Rating: {data.rating}</p>
             <p>Problems solved: {data.problemSolved}</p>
+            <SubmissionCalendar platform="cf" handle={handle} title="Codeforces" />
         </div>
         
     )

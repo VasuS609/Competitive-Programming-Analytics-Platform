@@ -1,12 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const run = require('./services/cfService');
+const run = require('./services/codeforces/cfService');
 
-const {fetchRatingHistory} = require('./services/cfService');
+const {fetchRatingHistory} = require('./services/codeforces/cfService');
 const {addProblem, getProblemsByDate, getGoalProgress} = require('./services/problemService');
-const { getLCStats } = require('./services/lcService');
-const { getCodeChefStats } = require('./services/codechefService');
+const { getLCStats } = require('./services/leetcode/lcService');
+const { getLeetcodeSubmissionCalendar } = require('./services/leetcode/lcSubmissionsCalendar');
+const { getCodeChefStats } = require('./services/codechef/codechefService');
+const { getCodechefSubmissionCalendar } = require('./services/codechef/ccSubmissionsCalendar');
+const { getCodeforcesSubmissionCalendar } = require('./services/codeforces/cfSubmissionsCalendar');
 
 
 const { default: rateLimit } = require("express-rate-limit");
@@ -122,6 +125,24 @@ app.get('/api/leetcode/stats/:handle', async(req, res) => {
   }
 })
 
+app.get('/api/leetcode/submissions/:handle', async (req, res) => {
+  try {
+    res.json(await getLeetcodeSubmissionCalendar(req.params.handle));
+  } catch (e) {
+    console.error(e);
+    res.status(502).json({ error: 'Failed to fetch LeetCode submissions' });
+  }
+});
+
+app.get('/api/cf/submissions/:handle', async (req, res) => {
+  try {
+    res.json(await getCodeforcesSubmissionCalendar(req.params.handle));
+  } catch (e) {
+    console.error(e);
+    res.status(502).json({ error: 'Failed to fetch Codeforces submissions' });
+  }
+});
+
 const port = process.env.PORT || 5000;
 
 app.listen(port, () => {
@@ -144,5 +165,14 @@ app.get('/api/data/codechef/:handle', async (req, res) => {
     res.status( 502 ).json({
       error: e.message || 'Failed to fetch CodeChef data'
     });
+  }
+});
+
+app.get('/api/codechef/submissions/:handle', async (req, res) => {
+  try {
+    res.json(await getCodechefSubmissionCalendar(req.params.handle));
+  } catch (e) {
+    console.error(e);
+    res.status(502).json({ error: 'Failed to fetch CodeChef submissions' });
   }
 });

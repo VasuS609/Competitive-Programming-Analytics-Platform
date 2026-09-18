@@ -1,4 +1,5 @@
 import {useCodechefStats} from '../hooks/useCodechefStats';
+import SubmissionCalendar from './SubmissionCalendar';
 
 
 function CodechefDashboard({handle}){
@@ -27,6 +28,7 @@ function CodechefDashboard({handle}){
             <p>Country: {data.countryName}</p>
             <p>Global Rank: {data.globalRank}</p>
             <p>Country Rank: {data.countryRank}</p>
+            <SubmissionCalendar platform="codechef" handle={handle} title="CodeChef" />
             {/* <p>Heatmap: {JSON.stringify(data.heatMap)}</p> */}
             {/* <<p>Rating Data: {JSON.stringify(data.ratingData)}</p> */}
                  
