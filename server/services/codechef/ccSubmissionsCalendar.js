@@ -28,11 +28,14 @@ async function getCodechefSubmissionCalendar(handle) {
   if (start < 0 || end < 0) throw new Error("CodeChef submission calendar was not found");
 
   const script = html.slice(start + startMarker.length, end);
-  const heatMap = JSON.parse(script.slice(script.indexOf("{")).split(";")[0].trim());
+  const heatMap = JSON.parse(script.slice(0, script.indexOf(";")).trim());
   const dates = getLastSevenDates();
   const counts = Object.fromEntries(dates.map((date) => [date, 0]));
 
-  Object.entries(heatMap).forEach(([date, count]) => {
+  const entries = Array.isArray(heatMap)
+    ? heatMap.map(({ date, value }) => [date, value])
+    : Object.entries(heatMap);
+  entries.forEach(([date, count]) => {
     const normalizedDate = new Date(date).toISOString().slice(0, 10);
     if (normalizedDate in counts) counts[normalizedDate] = Number(count) || 0;
   });
@@ -43,3 +46,5 @@ async function getCodechefSubmissionCalendar(handle) {
 }
 
 module.exports = { getCodechefSubmissionCalendar };
+
+//used ai to generate this file

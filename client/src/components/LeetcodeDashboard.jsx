@@ -1,5 +1,6 @@
 import {useLeetcodeStats} from '../hooks/useLeetcodeStats';
 import SubmissionCalendar from './SubmissionCalendar';
+import { useLcSubmissions } from '../hooks/submissions/useLcSubmissions';
 
 function LeetcodeDashboard({handle}){
     const {data, loading, error} = useLeetcodeStats({handle});
@@ -25,7 +26,7 @@ function LeetcodeDashboard({handle}){
             <p>Hard Solved: {data.hardSolved}</p>
             <p>Recent Submissions: {data.recentSubmissions.length}</p>
             <p>Fetched At: {data.fetchedAt}</p>
-            <SubmissionCalendar platform="leetcode" handle={handle} title="LeetCode" />
+            <SubmissionCalendar handle={handle} title="LeetCode" useCalendar={useLcSubmissions} />
         </div>
     )
 }

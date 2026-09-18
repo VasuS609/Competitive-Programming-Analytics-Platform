@@ -7,8 +7,6 @@ export function useSubmissionCalendar(platform, handle) {
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
-    setError(null);
 
     fetch(`http://localhost:5000/api/${platform}/submissions/${handle}`, {
       signal: controller.signal,

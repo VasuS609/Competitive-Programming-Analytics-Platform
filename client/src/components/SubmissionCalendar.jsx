@@ -1,8 +1,7 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { useSubmissionCalendar } from "../hooks/useSubmissionCalendar";
 
-function SubmissionCalendar({ platform, handle, title }) {
-  const { data, loading, error } = useSubmissionCalendar(platform, handle);
+function SubmissionCalendar({ handle, title, useCalendar }) {
+  const { data, loading, error } = useCalendar(handle);
 
   if (loading) return <p>Loading {title} submissions...</p>;
   if (error) return <p>Could not load {title} submissions: {error.message}</p>;

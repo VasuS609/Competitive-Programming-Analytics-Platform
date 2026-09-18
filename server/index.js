@@ -30,19 +30,6 @@ app.get('/api/health', (req, res) => {
     res.json({status: 'ok'});
 })
 
-app.get('/api/cf/stats/:handle', async (req, res) => {
- //todo: call getCFStatus(req.param.handle) send as JSON;
-    try{
-        const data = await run(req.params.handle);
-        res.json(data);
-    }catch(e){
-        console.error(e);
-        res.status(500).json({
-            error:'Failed to fetch CF stats'
-        });
-    }
-})
-
 
 app.post('/api/problems', (req, res) => {
   try {
@@ -101,6 +88,20 @@ app.get('/api/goal/:date', (req, res) =>{
 })
 
 
+app.get('/api/cf/stats/:handle', async (req, res) => {
+ //todo: call getCFStatus(req.param.handle) send as JSON;
+    try{
+        const data = await run(req.params.handle);
+        res.json(data);
+    }catch(e){
+        console.error(e);
+        res.status(500).json({
+            error:'Failed to fetch CF stats'
+        });
+    }
+})
+
+
 app.get('/api/cf/rating/:handle', async(req, res) => {
   try{
     const history = await fetchRatingHistory(req.params.handle);
@@ -113,6 +114,7 @@ app.get('/api/cf/rating/:handle', async(req, res) => {
   }
 })
 
+
 app.get('/api/leetcode/stats/:handle', async(req, res) => {
   try{
     const data = await  getLCStats(req.params.handle);
@@ -123,30 +125,6 @@ app.get('/api/leetcode/stats/:handle', async(req, res) => {
       error: 'Failed to fetch rating history'
     })
   }
-})
-
-app.get('/api/leetcode/submissions/:handle', async (req, res) => {
-  try {
-    res.json(await getLeetcodeSubmissionCalendar(req.params.handle));
-  } catch (e) {
-    console.error(e);
-    res.status(502).json({ error: 'Failed to fetch LeetCode submissions' });
-  }
-});
-
-app.get('/api/cf/submissions/:handle', async (req, res) => {
-  try {
-    res.json(await getCodeforcesSubmissionCalendar(req.params.handle));
-  } catch (e) {
-    console.error(e);
-    res.status(502).json({ error: 'Failed to fetch Codeforces submissions' });
-  }
-});
-
-const port = process.env.PORT || 5000;
-
-app.listen(port, () => {
-    console.log(`Server is running on port: ${port}`);
 })
 
 
@@ -168,6 +146,27 @@ app.get('/api/data/codechef/:handle', async (req, res) => {
   }
 });
 
+
+app.get('/api/leetcode/submissions/:handle', async (req, res) => {
+  try {
+    res.json(await getLeetcodeSubmissionCalendar(req.params.handle));
+  } catch (e) {
+    console.error(e);
+    res.status(502).json({ error: 'Failed to fetch LeetCode submissions' });
+  }
+});
+
+
+app.get('/api/cf/submissions/:handle', async (req, res) => {
+  try {
+    res.json(await getCodeforcesSubmissionCalendar(req.params.handle));
+  } catch (e) {
+    console.error(e);
+    res.status(502).json({ error: 'Failed to fetch Codeforces submissions' });
+  }
+});
+
+
 app.get('/api/codechef/submissions/:handle', async (req, res) => {
   try {
     res.json(await getCodechefSubmissionCalendar(req.params.handle));
@@ -176,3 +175,10 @@ app.get('/api/codechef/submissions/:handle', async (req, res) => {
     res.status(502).json({ error: 'Failed to fetch CodeChef submissions' });
   }
 });
+
+
+const port = process.env.PORT || 5000;
+
+app.listen(port, () => {
+    console.log(`Server is running on port: ${port}`);
+})
