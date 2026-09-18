@@ -1,6 +1,6 @@
-import {useLeetcodeStats} from '../hooks/useLeetcodeStats';
-import SubmissionCalendar from './SubmissionCalendar';
-import { useLcSubmissions } from '../hooks/submissions/useLcSubmissions';
+import {useLeetcodeStats} from '../../hooks/useLeetcodeStats';
+import SubmissionCalendar from '../submissionsChart/SubmissionCalendar';
+import { useLcSubmissions } from '../../hooks/submissions/useLcSubmissions';
 
 function LeetcodeDashboard({handle}){
     const {data, loading, error} = useLeetcodeStats({handle});

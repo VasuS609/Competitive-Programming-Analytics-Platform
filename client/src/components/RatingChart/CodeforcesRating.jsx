@@ -45,6 +45,8 @@ function RatingCharts({handle}){
                 <Line type="monotone" dataKey="rating" stroke="#8884d8" />
             </LineChart>
             </ResponsiveContainer>
+            
+            {/* <SubmissionCalendar handle={handle} title="LeetCode" useCalendar={useCfSubmissions} /> */}
         </div>
     )
 }

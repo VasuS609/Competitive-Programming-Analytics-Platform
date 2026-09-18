@@ -1,9 +1,9 @@
 import AddProblemForm from "./components/addProblemForm"
-import CFDashboard from "./components/CFDashboard"
+import CFDashboard from "./components/Dashboards/CFDashboard"
 import GoalProgress from "./components/GoalProgress"
-import LeetcodeDashboard from "./components/LeetcodeDashboard"
-import RatingCharts from "./components/CodeforcesRatingCharts"
-import CodechefDashboard from "./components/CodechefDashboard"
+import LeetcodeDashboard from "./components/Dashboards/LeetcodeDashboard"
+import RatingCharts from "./components/RatingChart/CodeforcesRating"
+import CodechefDashboard from "./components/Dashboards/CodechefDashboard"
 
 
 function App() {

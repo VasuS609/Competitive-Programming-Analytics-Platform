@@ -1,6 +1,6 @@
-import {useCFStats} from "../hooks/useCFStats";
-import SubmissionCalendar from "./SubmissionCalendar";
-import { useCfSubmissions } from "../hooks/submissions/useCfSubmissions";
+import {useCFStats} from "../../hooks/useCFStats";
+import SubmissionCalendar from "../submissionsChart/SubmissionCalendar";
+import { useCfSubmissions } from "../../hooks/submissions/useCfSubmissions";
 
 function CFDashboard({handle}){
     const {data, loading, error} = useCFStats(handle);

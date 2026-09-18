@@ -1,6 +1,6 @@
-import {useCodechefStats} from '../hooks/useCodechefStats';
-import SubmissionCalendar from './SubmissionCalendar';
-import { useCcSubmissions } from '../hooks/submissions/useCcSumissions';
+import {useCodechefStats} from '../../hooks/useCodechefStats';
+import SubmissionCalendar from '../submissionsChart/SubmissionCalendar';
+import { useCcSubmissions } from '../../hooks/submissions/useCcSumissions';
 
 
 function CodechefDashboard({handle}){
