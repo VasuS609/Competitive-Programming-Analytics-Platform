@@ -88,6 +88,24 @@ app.get('/api/goal/:date', (req, res) =>{
 })
 
 
+app.get('/api/cf/rating/:handle', async(req, res) => {
+  try{
+    const history = await fetchRatingHistory(req.params.handle);
+    res.json(history);
+  }catch(e){
+    console.log(e);
+    res.status(500).json({
+      error:'Failed to fetch rating history'
+    });
+  }
+})
+
+
+
+//platform stats
+
+
+
 app.get('/api/cf/stats/:handle', async (req, res) => {
  //todo: call getCFStatus(req.param.handle) send as JSON;
     try{
@@ -101,18 +119,6 @@ app.get('/api/cf/stats/:handle', async (req, res) => {
     }
 })
 
-
-app.get('/api/cf/rating/:handle', async(req, res) => {
-  try{
-    const history = await fetchRatingHistory(req.params.handle);
-    res.json(history);
-  }catch(e){
-    console.log(e);
-    res.status(500).json({
-      error:'Failed to fetch rating history'
-    });
-  }
-})
 
 
 app.get('/api/leetcode/stats/:handle', async(req, res) => {
@@ -128,7 +134,7 @@ app.get('/api/leetcode/stats/:handle', async(req, res) => {
 })
 
 
-app.get('/api/data/codechef/:handle', async (req, res) => {
+app.get('/api/codechef/stats/:handle', async (req, res) => {
   const { handle } = req.params;
 
   if (!handle) {
@@ -147,6 +153,9 @@ app.get('/api/data/codechef/:handle', async (req, res) => {
 });
 
 
+
+//submission handles
+
 app.get('/api/leetcode/submissions/:handle', async (req, res) => {
   try {
     res.json(await getLeetcodeSubmissionCalendar(req.params.handle));
@@ -155,6 +164,7 @@ app.get('/api/leetcode/submissions/:handle', async (req, res) => {
     res.status(502).json({ error: 'Failed to fetch LeetCode submissions' });
   }
 });
+
 
 
 app.get('/api/cf/submissions/:handle', async (req, res) => {
@@ -175,6 +185,8 @@ app.get('/api/codechef/submissions/:handle', async (req, res) => {
     res.status(502).json({ error: 'Failed to fetch CodeChef submissions' });
   }
 });
+
+
 
 
 const port = process.env.PORT || 5000;

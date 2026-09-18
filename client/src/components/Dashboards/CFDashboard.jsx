@@ -1,33 +1,33 @@
-import {useCFStats} from "../../hooks/useCFStats";
-import SubmissionCalendar from "../submissionsChart/SubmissionCalendar";
-import { useCfSubmissions } from "../../hooks/submissions/useCfSubmissions";
+// import {useCFStats} from "../../hooks/useCFStats";
+// import SubmissionCalendar from "../RatingChart/SubmissionCalendar";
+// import { useCfSubmissions } from "../../hooks/submissions/useCfSubmissions";
 
-function CFDashboard({handle}){
-    const {data, loading, error} = useCFStats(handle);
+// function CFDashboard({handle}){
+//     const {data, loading, error} = useCFStats(handle);
     
-    if(loading === true){
-        return <div>Loading your Dashboard...</div>
+//     if(loading === true){
+//         return <div>Loading your Dashboard...</div>
         
-    }
-    if(error != null){
-        return <div>Unexpected error occured: {error.message}</div>
-    }
+//     }
+//     if(error != null){
+//         return <div>Unexpected error occured: {error.message}</div>
+//     }
 
-    if(!data){
-        return <div>No Codeforces data found.</div>
-    }
+//     if(!data){
+//         return <div>No Codeforces data found.</div>
+//     }
     
-    return (
+//     return (
         
-        <div>
-            <h2>{data.username}</h2>
-            <p>Rank: {data.rank}</p>
-            <p>Rating: {data.rating}</p>
-            <p>Problems solved: {data.problemSolved}</p>
-            <SubmissionCalendar handle={handle} title="Codeforces" useCalendar={useCfSubmissions} />
-        </div>
+//         <div>
+//             <h2>{data.username}</h2>
+//             <p>Rank: {data.rank}</p>
+//             <p>Rating: {data.rating}</p>
+//             <p>Problems solved: {data.problemSolved}</p>
+//             <SubmissionCalendar handle={handle} title="Codeforces" useCalendar={useCfSubmissions} />
+//         </div>
         
-    )
-}
+//     )
+// }
 
-export default CFDashboard;
+// export default CFDashboard;
