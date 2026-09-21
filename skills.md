@@ -22,3 +22,13 @@
     Express backend with cached CF stats + rating history
 SQLite-backed problem tracking with a configurable goals system
 React dashboard: live CF profile, goal progress, a form to log solves, and a real rating trend chart
+
+
+Add unit and integration tests
+Attach and verify rate limiting
+Add retries, timeouts, and circuit-breaker behavior for external platforms
+Replace in-memory caching with Redis or a persistent cache
+Add background synchronization jobs
+Add authentication and user-specific profiles
+Dockerize and deploy the application
+Add monitoring, structured logging, and API documentation

@@ -1,31 +1,33 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
-export function useStats(handle, platform){
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState(null);
-    const [error, setError] = useState(null);
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const PLATFORMS = ["codeforces", "codechef", "leetcode"];
 
-    useEffect(() =>{
-        fetch(`http://localhost:5000/api/${platform}/stats/${handle}`)
-        .then((res) => {
-            if(!res.ok){
-                throw new Error(`Error while fetching ${platform} stats`);
-            }
-            return res.json();
-        })
-        .then((json) => {
-            setData(json);
-            setLoading(false);
-        })
-        .catch((e) => {
-            setError(e);
-            setLoading(false);
-            console.error(`Unexpected error occured while fetching ${platform} Stats: `, e);
-        })
+export function useStats(handle, platform) {
+    const [state, setState] = useState({ data: null, loading: Boolean(handle), error: null });
 
-    }, [handle, platform])
+    useEffect(() => {
+        if (!handle || !PLATFORMS.includes(platform)) {
+            return undefined;
+        }
 
-    return {data, loading, error};
+        const controller = new AbortController();
+
+        fetch(`${API_URL}/${platform}/stats/${encodeURIComponent(handle.trim())}`, { signal: controller.signal })
+            .then(async (response) => {
+                const body = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(body.error || `Failed to fetch ${platform} stats`);
+                return body;
+            })
+            .then((data) => setState({ data, loading: false, error: null }))
+            .catch((error) => {
+                if (error.name !== "AbortError") setState({ data: null, loading: false, error });
+            });
+
+        return () => controller.abort();
+    }, [handle, platform]);
+
+    return state;
 }
 
 export default useStats;

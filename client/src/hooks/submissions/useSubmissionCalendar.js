@@ -1,23 +1,33 @@
 import { useEffect, useState } from "react";
 
-export function useSubmissionCalendar(platform, handle) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+export function useSubmissionCalendar(handle, platform) {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(Boolean(handle));
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!handle || !platform) {
+      return undefined;
+    }
+
     const controller = new AbortController();
 
-    fetch(`http://localhost:5000/api/${platform}/submissions/${handle}`, {
+    fetch(`${API_URL}/${platform}/submissions/${encodeURIComponent(handle.trim())}`, {
       signal: controller.signal,
     })
-      .then((response) => {
-        if (!response.ok) throw new Error(`Failed to fetch ${platform} submissions`);
-        return response.json();
+      .then(async (response) => {
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.error || `Failed to fetch ${platform} submissions`);
+        return body;
       })
       .then(setData)
       .catch((fetchError) => {
-        if (fetchError.name !== "AbortError") setError(fetchError);
+        if (fetchError.name !== "AbortError") {
+          setError(fetchError);
+          setData([]);
+        }
       })
       .finally(() => setLoading(false));
 

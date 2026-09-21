@@ -1,11 +1,12 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useSubmissionCalendar } from "../../hooks/submissions/useSubmissionCalendar";
 
-function SubmissionCalendar({ handle, title, useCalendar }) {
-  const { data, loading, error } = useCalendar(handle);
+function SubmissionCalendar({ handle, platform, title }) {
+  const { data, loading, error } = useSubmissionCalendar(handle, platform);
 
   if (loading) return <p>Loading {title} submissions...</p>;
   if (error) return <p>Could not load {title} submissions: {error.message}</p>;
-  if (!data) return <p>No {title} submissions found.</p>;
+  if (!data.length) return <p className="muted">No {title} submissions found.</p>;
 
   return (
     <section>

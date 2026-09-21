@@ -1,9 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const run = require('./services/codeforces/cfService');
-
-const {fetchRatingHistory} = require('./services/codeforces/cfService');
+const { getCFStats, fetchRatingHistory } = require('./services/codeforces/cfService');
 const {addProblem, getProblemsByDate, getGoalProgress} = require('./services/problemService');
 const { getLCStats } = require('./services/leetcode/lcService');
 const { getLeetcodeSubmissionCalendar } = require('./services/leetcode/lcSubmissionsCalendar');
@@ -25,6 +23,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+app.use(limiter);
 
 app.get('/api/health', (req, res) => {
     res.json({status: 'ok'});
@@ -102,87 +101,74 @@ app.get('/api/cf/rating/:handle', async(req, res) => {
 
 
 
-//platform stats
+const platformServices = {
+  codeforces: {
+    stats: getCFStats,
+    submissions: getCodeforcesSubmissionCalendar,
+    rating: async (handle) => fetchRatingHistory(handle),
+  },
+  codechef: {
+    stats: getCodeChefStats,
+    submissions: getCodechefSubmissionCalendar,
+    rating: async (handle) => {
+      const data = await getCodeChefStats(handle);
+      return normalizeCodeChefRating(data.ratingData);
+    },
+  },
+  leetcode: {
+    stats: getLCStats,
+    submissions: getLeetcodeSubmissionCalendar,
+    rating: async () => [],
+  },
+};
 
+function getPlatformService(platform, type) {
+  return platformServices[platform]?.[type];
+}
 
+function normalizeCodeChefRating(ratingData) {
+  if (!Array.isArray(ratingData)) return [];
 
-app.get('/api/cf/stats/:handle', async (req, res) => {
- //todo: call getCFStatus(req.param.handle) send as JSON;
-    try{
-        const data = await run(req.params.handle);
-        res.json(data);
-    }catch(e){
-        console.error(e);
-        res.status(500).json({
-            error:'Failed to fetch CF stats'
-        });
-    }
-})
+  return ratingData.map((item) => ({
+    date: item.rating_date || item.date || item.end_date || '',
+    rating: Number(item.rating || item.newRating || item.rating_number || 0),
+  })).filter((item) => item.date && item.rating);
+}
 
-
-
-app.get('/api/leetcode/stats/:handle', async(req, res) => {
-  try{
-    const data = await  getLCStats(req.params.handle);
-    res.json(data);
-  }catch(e){
-    console.log(e);
-    res.status(501).json({
-      error: 'Failed to fetch rating history'
-    })
-  }
-})
-
-
-app.get('/api/codechef/stats/:handle', async (req, res) => {
-  const { handle } = req.params;
-
-  if (!handle) {
-    return res.status(400).json({ error: 'CodeChef handle is required' });
-  }
+app.get('/api/:platform/stats/:handle', async (req, res) => {
+  const service = getPlatformService(req.params.platform, 'stats');
+  if (!service) return res.status(404).json({ error: 'Unsupported platform' });
+  if (!req.params.handle) return res.status(400).json({ error: 'Handle is required' });
 
   try {
-    const data = await getCodeChefStats(handle);
-    res.json(data);
-  } catch (e) {
-    console.error(e);
-    res.status( 502 ).json({
-      error: e.message || 'Failed to fetch CodeChef data'
-    });
+    res.json(await service(req.params.handle));
+  } catch (error) {
+    console.error(error);
+    res.status(error.status === 404 ? 404 : 502).json({ error: error.message || 'Failed to fetch stats' });
   }
 });
 
+app.get('/api/:platform/submissions/:handle', async (req, res) => {
+  const service = getPlatformService(req.params.platform, 'submissions');
+  if (!service) return res.status(404).json({ error: 'Unsupported platform' });
 
-
-//submission handles
-
-app.get('/api/leetcode/submissions/:handle', async (req, res) => {
   try {
-    res.json(await getLeetcodeSubmissionCalendar(req.params.handle));
-  } catch (e) {
-    console.error(e);
-    res.status(502).json({ error: 'Failed to fetch LeetCode submissions' });
+    res.json(await service(req.params.handle));
+  } catch (error) {
+    console.error(error);
+    res.status(502).json({ error: error.message || 'Failed to fetch submissions' });
   }
 });
 
+app.get('/api/:platform/rating/:handle', async (req, res) => {
+  const service = getPlatformService(req.params.platform, 'rating');
+  if (!service) return res.status(404).json({ error: 'Unsupported platform' });
 
-
-app.get('/api/cf/submissions/:handle', async (req, res) => {
   try {
-    res.json(await getCodeforcesSubmissionCalendar(req.params.handle));
-  } catch (e) {
-    console.error(e);
-    res.status(502).json({ error: 'Failed to fetch Codeforces submissions' });
-  }
-});
-
-
-app.get('/api/codechef/submissions/:handle', async (req, res) => {
-  try {
-    res.json(await getCodechefSubmissionCalendar(req.params.handle));
-  } catch (e) {
-    console.error(e);
-    res.status(502).json({ error: 'Failed to fetch CodeChef submissions' });
+    res.json(await service(req.params.handle));
+  } catch (error) {
+    console.error(error);
+    res.status(502).json({ error: error.message || 'Failed to fetch rating history' });
   }
 });
 

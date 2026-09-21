@@ -27,7 +27,7 @@ async function fetchFromCF(handle){
         rank: profile.rank || 'Unrated',
         rating: profile.rating || 0,
         problemSolved: uniqueSubmissions.length,
-        problems: uniqueSubmissions.slice(0, 6).map(s => ({
+        problems: uniqueSubmissions.map(s => ({
             name: s.problem.name,
             rating: s.problem.rating,
             id: s.problem.contestId,
@@ -92,8 +92,9 @@ async function getCFStats(handle){
 
 async function run(handle){
     const data = await getCFStats(handle);
-    return {data};
+    return data;
 }
 
 module.exports = run;
+module.exports.getCFStats = getCFStats;
 module.exports.fetchRatingHistory = fetchRatingHistory;

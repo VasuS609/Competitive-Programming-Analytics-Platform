@@ -1,3 +1,45 @@
+.app-shell { width: min(1180px, 100%); margin: 0 auto; padding: 48px 28px 72px; box-sizing: border-box; text-align: left; }
+.app-header, .handle-form, .dashboard-heading, .table-heading, .summary-row, .rating-row, .pagination { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.app-header { margin-bottom: 32px; }
+.app-header h1 { max-width: 680px; margin: 6px 0 0; font-size: clamp(2.2rem, 6vw, 4.6rem); line-height: .98; }
+.header-note { max-width: 250px; color: var(--text); }
+.eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; font-size: .72rem; font-weight: 700; }
+.handle-form { align-items: end; padding: 18px; background: #f4f0e8; border: 1px solid var(--border); }
+.handle-form label { display: grid; gap: 6px; flex: 1; font-size: .78rem; font-weight: 700; }
+input, select, button { font: inherit; }
+input, select { min-width: 0; padding: 10px 12px; border: 1px solid var(--border); background: white; color: var(--text-h); }
+button { border: 0; padding: 11px 16px; background: var(--accent); color: white; cursor: pointer; font-weight: 700; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.home-dashboard { margin-top: 28px; }
+.summary-row { align-items: stretch; justify-content: start; }
+.summary-row > div, .chart-panel, .rating-summary, .table-panel { border-top: 3px solid var(--text-h); padding: 18px 0; }
+.summary-row > div { width: 220px; display: grid; gap: 4px; }
+.summary-row span, .summary-row small, .metric span { color: var(--text); font-size: .8rem; }
+.summary-row strong { font-size: 2rem; color: var(--text-h); }
+.home-grid, .chart-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 28px; margin-top: 22px; }
+.chart-panel, .rating-summary { min-width: 0; }
+h3 { color: var(--text-h); margin: 0 0 16px; }
+.rating-row { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.rating-row strong { color: var(--accent); }
+.platform-tabs { display: flex; gap: 8px; margin: 44px 0 22px; border-bottom: 1px solid var(--border); }
+.platform-tabs button { background: transparent; color: var(--text); border-bottom: 3px solid transparent; }
+.platform-tabs button.active { color: var(--text-h); border-color: var(--accent); }
+.dashboard-stack { display: grid; gap: 22px; }
+.platform-badge { padding: 5px 9px; border: 1px solid var(--accent); color: var(--accent); font-size: .75rem; text-transform: uppercase; }
+.metric-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+.metric { border: 1px solid var(--border); padding: 14px; display: grid; gap: 8px; }
+.metric strong { color: var(--text-h); font-size: 1.35rem; }
+.chart-grid > section { min-width: 0; border-top: 3px solid var(--text-h); padding-top: 18px; }
+.table-panel { margin-top: 4px; }
+.problem-list { border-top: 1px solid var(--border); }
+.problem-row { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.problem-row small { color: var(--accent); }
+.pagination { justify-content: center; margin-top: 16px; font-size: .85rem; }
+.pagination button { padding: 7px 10px; font-size: .8rem; }
+.status-panel { padding: 24px; border: 1px dashed var(--border); color: var(--text); }
+.error { color: #b42318; }
+.muted { color: var(--text); }
+@media (max-width: 760px) { .app-shell { padding: 28px 18px 48px; } .app-header, .handle-form { align-items: stretch; flex-direction: column; } .header-note { max-width: none; } .handle-form button { width: 100%; } .home-grid, .chart-grid { grid-template-columns: 1fr; } .metric-grid { grid-template-columns: repeat(2, 1fr); } .summary-row > div { width: 50%; } }
 .counter {
   font-size: 16px;
   padding: 5px 10px;
