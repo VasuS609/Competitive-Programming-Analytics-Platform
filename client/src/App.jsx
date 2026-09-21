@@ -50,15 +50,11 @@ function HomeDashboard({ handles }) {
     { id: "codechef", ...codechefStats },
     { id: "leetcode", ...leetcodeStats },
   ];
-  const calendars = [
-    { id: "codeforces", ...codeforcesCalendar },
-    { id: "codechef", ...codechefCalendar },
-    { id: "leetcode", ...leetcodeCalendar },
-  ];
   const activity = useMemo(() => {
+    const calendars = [codeforcesCalendar, codechefCalendar, leetcodeCalendar];
     const dates = calendars.find(({ data }) => data.length)?.data.map(({ date }) => date) || [];
     return dates.map((date, index) => ({ date, submissions: calendars.reduce((total, calendar) => total + (calendar.data[index]?.count || 0), 0) }));
-  }, [calendars]);
+  }, [codeforcesCalendar, codechefCalendar, leetcodeCalendar]);
   const totalSolved = stats.reduce((total, item) => total + (item.data?.problemSolved ?? item.data?.totalSolved ?? 0), 0);
 
   return <section className="home-dashboard">
