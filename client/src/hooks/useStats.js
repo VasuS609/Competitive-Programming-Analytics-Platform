@@ -3,10 +3,12 @@ import { API_URL } from "../api";
 const PLATFORMS = ["codeforces", "codechef", "leetcode"];
 
 export function useStats(handle, platform) {
-    const [state, setState] = useState({ data: null, loading: Boolean(handle), error: null });
+    const [state, setState] = useState({ data: null, error: null, key: "" });
+    const requestKey = `${platform}:${handle || ""}`;
+    const validRequest = Boolean(handle && PLATFORMS.includes(platform));
 
     useEffect(() => {
-        if (!handle || !PLATFORMS.includes(platform)) {
+        if (!validRequest) {
             return undefined;
         }
 
@@ -18,15 +20,19 @@ export function useStats(handle, platform) {
                 if (!response.ok) throw new Error(body.error || `Failed to fetch ${platform} stats`);
                 return body;
             })
-            .then((data) => setState({ data, loading: false, error: null }))
+            .then((data) => setState({ data, error: null, key: requestKey }))
             .catch((error) => {
-                if (error.name !== "AbortError") setState({ data: null, loading: false, error });
+                if (error.name !== "AbortError") setState({ data: null, error, key: requestKey });
             });
 
         return () => controller.abort();
-    }, [handle, platform]);
+    }, [handle, platform, requestKey, validRequest]);
 
-    return state;
+    return {
+        data: state.key === requestKey ? state.data : null,
+        loading: validRequest && state.key !== requestKey,
+        error: state.key === requestKey ? state.error : null,
+    };
 }
 
 export default useStats;

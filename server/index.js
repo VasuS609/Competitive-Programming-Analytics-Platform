@@ -170,7 +170,7 @@ app.get('/api/:platform/stats/:handle', async (req, res) => {
 });
 
 app.get('/api/:platform/submissions/:handle', async (req, res) => {
-  const service = getPlatformService(req.params.platform, 'submissions');
+  const service = getPlatformService(req.params.platform.toLowerCase(), 'submissions');
   if (!service) return res.status(404).json({ error: 'Unsupported platform' });
 
   try {
@@ -182,7 +182,7 @@ app.get('/api/:platform/submissions/:handle', async (req, res) => {
 });
 
 app.get('/api/:platform/rating/:handle', async (req, res) => {
-  const service = getPlatformService(req.params.platform, 'rating');
+  const service = getPlatformService(req.params.platform.toLowerCase(), 'rating');
   if (!service) return res.status(404).json({ error: 'Unsupported platform' });
 
   try {
