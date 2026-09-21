@@ -39,8 +39,22 @@ function App() {
 }
 
 function HomeDashboard({ handles }) {
-  const stats = platforms.map(({ id }) => ({ id, ...useStats(handles[id], id) }));
-  const calendars = platforms.map(({ id }) => ({ id, ...useSubmissionCalendar(handles[id], id) }));
+  const codeforcesStats = useStats(handles.codeforces, "codeforces");
+  const codechefStats = useStats(handles.codechef, "codechef");
+  const leetcodeStats = useStats(handles.leetcode, "leetcode");
+  const codeforcesCalendar = useSubmissionCalendar(handles.codeforces, "codeforces");
+  const codechefCalendar = useSubmissionCalendar(handles.codechef, "codechef");
+  const leetcodeCalendar = useSubmissionCalendar(handles.leetcode, "leetcode");
+  const stats = [
+    { id: "codeforces", ...codeforcesStats },
+    { id: "codechef", ...codechefStats },
+    { id: "leetcode", ...leetcodeStats },
+  ];
+  const calendars = [
+    { id: "codeforces", ...codeforcesCalendar },
+    { id: "codechef", ...codechefCalendar },
+    { id: "leetcode", ...leetcodeCalendar },
+  ];
   const activity = useMemo(() => {
     const dates = calendars.find(({ data }) => data.length)?.data.map(({ date }) => date) || [];
     return dates.map((date, index) => ({ date, submissions: calendars.reduce((total, calendar) => total + (calendar.data[index]?.count || 0), 0) }));
