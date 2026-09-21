@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { API_URL } from "../../api";
 const PLATFORMS = ["codeforces", "codechef", "leetcode"];
 
 export function useStats(handle, platform) {

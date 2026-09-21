@@ -122,6 +122,25 @@ const platformServices = {
   },
 };
 
+function normalizeStats(platform, data, handle) {
+  const solved = data.problemSolved ?? data.totalSolved ?? 0;
+  const rating = data.rating ?? data.currentRating ?? 0;
+
+  return {
+    ...data,
+    platform,
+    handle: data.handle || data.username || data.name || handle,
+    username: data.username || data.name || data.handle || handle,
+    solved,
+    problemSolved: solved,
+    totalSolved: solved,
+    rating,
+    currentRating: data.currentRating ?? rating,
+    rank: data.rank || data.globalRank || null,
+    problems: Array.isArray(data.problems) ? data.problems : [],
+  };
+}
+
 function getPlatformService(platform, type) {
   return platformServices[platform]?.[type];
 }
@@ -136,12 +155,14 @@ function normalizeCodeChefRating(ratingData) {
 }
 
 app.get('/api/:platform/stats/:handle', async (req, res) => {
-  const service = getPlatformService(req.params.platform, 'stats');
+  const platform = req.params.platform.toLowerCase();
+  const service = getPlatformService(platform, 'stats');
   if (!service) return res.status(404).json({ error: 'Unsupported platform' });
   if (!req.params.handle) return res.status(400).json({ error: 'Handle is required' });
 
   try {
-    res.json(await service(req.params.handle));
+    const data = await service(req.params.handle);
+    res.json(normalizeStats(platform, data, req.params.handle));
   } catch (error) {
     console.error(error);
     res.status(error.status === 404 ? 404 : 502).json({ error: error.message || 'Failed to fetch stats' });

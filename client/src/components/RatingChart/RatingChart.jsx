@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { API_URL } from "../../api";
 
 function RatingChart({ handle, platform, title }) {
   const [state, setState] = useState({ data: [], loading: Boolean(handle), error: null });

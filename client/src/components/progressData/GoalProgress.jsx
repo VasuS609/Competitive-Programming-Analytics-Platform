@@ -1,4 +1,5 @@
 import {useState, useEffect} from "react";
+import { request } from "../../api";
 
 function getLocalDate() {
     const date = new Date();
@@ -18,11 +19,7 @@ function GoalProgress(){
     useEffect(() =>{
         const today = getLocalDate();
         
-        fetch(`http://localhost:5000/api/goal/${today}`)
-        .then((res) =>{
-            if(!res.ok) throw new Error('Error while fetching today CF Stats');
-            return res.json();
-        })
+        request(`/goal/${today}`)
         .then((json) =>{
             setProgress(json);
             setLoading(false);
