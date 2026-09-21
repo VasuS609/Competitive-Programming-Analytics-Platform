@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { API_URL } from "../../api";
+import { API_URL } from "../api";
 
 export function useSubmissionCalendar(handle, platform) {
   const [data, setData] = useState([]);

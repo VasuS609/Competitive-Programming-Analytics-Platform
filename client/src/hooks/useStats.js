@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { API_URL } from "../../api";
+import { API_URL } from "../api";
 const PLATFORMS = ["codeforces", "codechef", "leetcode"];
 
 export function useStats(handle, platform) {
