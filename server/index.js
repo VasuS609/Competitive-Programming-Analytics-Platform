@@ -87,20 +87,6 @@ app.get('/api/goal/:date', (req, res) =>{
 })
 
 
-app.get('/api/cf/rating/:handle', async(req, res) => {
-  try{
-    const history = await fetchRatingHistory(req.params.handle);
-    res.json(history);
-  }catch(e){
-    console.log(e);
-    res.status(500).json({
-      error:'Failed to fetch rating history'
-    });
-  }
-})
-
-
-
 const platformServices = {
   codeforces: {
     stats: getCFStats,
