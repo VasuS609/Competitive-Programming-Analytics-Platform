@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import DetailedDashboard from "../DetailedData/DetailedDashboard";
+import { useState } from "react";
 import HomeDashboard from "./HomeDashboard";
+import { useProfile } from "../../context/useProfile";
 
 const platforms = [
   { id: "codeforces", label: "Codeforces" },
@@ -8,30 +8,43 @@ const platforms = [
   { id: "leetcode", label: "LeetCode" },
 ];
 
-function Dashboard() {
-  
-  const [handles, setHandles] = useState(() => {
-    const saved = localStorage.getItem("cp_tracker_handles");
-    return saved ? JSON.parse(saved) : { codeforces: "", codechef: "", leetcode: "" };
-  });
+function ProfileForm({ activePlatform, handles, setActivePlatform, setHandle }) {
+  const [draft, setDraft] = useState(handles[activePlatform]);
+  const platform = platforms.find(({ id }) => id === activePlatform);
 
-  const [draft, setDraft] = useState(handles);
-  const [selectedPlatform, setSelectedPlatform] = useState("codeforces");
-
-  useEffect(() => {
-    setDraft(handles);
-  }, [handles]);
-
-  const updateHandles = (event) => {
+  const saveHandle = (event) => {
     event.preventDefault();
-    const updated = Object.fromEntries(
-      Object.entries(draft).map(([platform, handle]) => [platform, handle.trim()])
-    );
-    
-   
-    setHandles(updated);
-    localStorage.setItem("cp_tracker_handles", JSON.stringify(updated));
+    setHandle(activePlatform, draft);
   };
+
+  return (
+    <form className="handle-form" onSubmit={saveHandle}>
+      <label className="field-label">
+        Platform
+        <select
+          value={activePlatform}
+          onChange={(event) => setActivePlatform(event.target.value)}
+        >
+          {platforms.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
+        </select>
+      </label>
+      <label className="field-label">
+        Username
+        <input
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder={`${platform.label} username`}
+          maxLength={40}
+        />
+      </label>
+      <button type="submit" className="primary-button">Save</button>
+    </form>
+  );
+}
+
+function Dashboard() {
+  const { activePlatform, handles, setActivePlatform, setHandle } = useProfile();
+  const hasHandles = Object.values(handles).some(Boolean);
 
   return (
     <main className="app-shell text-black">
@@ -47,65 +60,19 @@ function Dashboard() {
         <p className="hero-copy">Track solved problems, ratings, and recent activity without jumping between tabs.</p>
       </section>
 
-      <form
-        className="handle-form"
-        onSubmit={updateHandles}
-      >
-        {platforms.map(({ id, label }) => (
-          <label key={id} className="field-label">
-            {label}
-            <input
-              value={draft[id]}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  [id]: event.target.value,
-                }))
-              }
-              placeholder="username"
-            />
-          </label>
-        ))}
-        <button
-          type="submit"
-          className="primary-button"
-        >
-          Load profiles
-        </button>
-      </form>
+      <ProfileForm
+        key={activePlatform}
+        activePlatform={activePlatform}
+        handles={handles}
+        setActivePlatform={setActivePlatform}
+        setHandle={setHandle}
+      />
 
-      
-      {Object.values(handles).some((h) => h) ? (
-        <>
-          <HomeDashboard handles={handles} />
-
-          <nav className="platform-tabs" aria-label="Platform details">
-            {platforms.map(({ id, label }) => (
-              <button
-                key={id}
-                className={`tab-button ${selectedPlatform === id ? "active" : ""}`}
-                onClick={() => setSelectedPlatform(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
-
-          {handles[selectedPlatform] ? (
-            <DetailedDashboard
-              handle={handles[selectedPlatform]}
-              platform={selectedPlatform}
-              title={platforms.find(({ id }) => id === selectedPlatform).label}
-            />
-          ) : (
-            <div className="status-panel">
-              Enter a handle for {platforms.find(({ id }) => id === selectedPlatform).label} above to view details.
-            </div>
-          )}
-        </>
+      {hasHandles ? (
+        <HomeDashboard handles={handles} />
       ) : (
         <div className="status-panel text-center mt-8">
-          Enter your handles above to populate your dashboards.
+          Save a username above to populate your dashboard.
         </div>
       )}
     </main>

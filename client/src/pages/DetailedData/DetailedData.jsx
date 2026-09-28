@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import DetailedDashboard from "./DetailedDashboard";
+import { useProfile } from "../../context/useProfile";
 
 const platforms = [
   { id: "codeforces", label: "Codeforces" },
@@ -8,36 +8,10 @@ const platforms = [
   { id: "leetcode", label: "LeetCode" },
 ];
 
-const defaultHandles = {
-  codeforces: "",
-  codechef: "",
-  leetcode: "",
-};
-
-function readHandles() {
-  try {
-    const saved = localStorage.getItem("cp_tracker_handles");
-    if (!saved) return defaultHandles;
-
-    const parsed = JSON.parse(saved);
-    if (!parsed || typeof parsed !== "object") return defaultHandles;
-
-    const handles = { ...defaultHandles };
-    for (const platform of platforms) {
-      if (typeof parsed[platform.id] !== "string") return defaultHandles;
-      handles[platform.id] = parsed[platform.id].trim();
-    }
-    return handles;
-  } catch {
-    return defaultHandles;
-  }
-}
-
 function DetailedData() {
-  const [handles] = useState(readHandles);
-  const [selectedPlatform, setSelectedPlatform] = useState("codeforces");
-  const platform = platforms.find(({ id }) => id === selectedPlatform);
-  const handle = handles[selectedPlatform];
+  const { activePlatform, handles, setActivePlatform } = useProfile();
+  const platform = platforms.find(({ id }) => id === activePlatform);
+  const handle = handles[activePlatform];
 
   return (
     <main className="app-shell text-black">
@@ -51,8 +25,8 @@ function DetailedData() {
         {platforms.map(({ id, label }) => (
           <button
             key={id}
-            className={`tab-button ${selectedPlatform === id ? "active" : ""}`}
-            onClick={() => setSelectedPlatform(id)}
+            className={`tab-button ${activePlatform === id ? "active" : ""}`}
+            onClick={() => setActivePlatform(id)}
             type="button"
           >
             {label}
@@ -63,7 +37,7 @@ function DetailedData() {
       {handle ? (
         <DetailedDashboard
           handle={handle}
-          platform={selectedPlatform}
+          platform={activePlatform}
           title={platform.label}
         />
       ) : (

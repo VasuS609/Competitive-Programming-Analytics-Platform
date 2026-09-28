@@ -1,26 +1,24 @@
 import { useEffect, useState } from "react";
 import { API_URL } from "../api";
+import { getCachedRequest } from "./requestCache";
 
 export function useSubmissionCalendar(handle, platform) {
   const [state, setState] = useState({ data: [], error: null, key: "" });
-  const requestKey = `${platform}:${handle || ""}`;
-  const validRequest = Boolean(handle && platform);
+  const normalizedHandle = handle?.trim() || "";
+  const requestKey = `${platform}:${normalizedHandle}`;
+  const validRequest = Boolean(normalizedHandle && platform);
 
   useEffect(() => {
     if (!validRequest) {
       return undefined;
     }
 
-    const controller = new AbortController();
+    const request = getCachedRequest(
+      `${platform}:${normalizedHandle}:submissions`,
+      `${API_URL}/${platform}/submissions/${encodeURIComponent(normalizedHandle)}`,
+    );
 
-    fetch(`${API_URL}/${platform}/submissions/${encodeURIComponent(handle.trim())}`, {
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(body.error || `Failed to fetch ${platform} submissions`);
-        return body;
-      })
+    request.promise
       .then((data) => setState({ data, error: null, key: requestKey }))
       .catch((fetchError) => {
         if (fetchError.name !== "AbortError") {
@@ -28,8 +26,8 @@ export function useSubmissionCalendar(handle, platform) {
         }
       });
 
-    return () => controller.abort();
-  }, [platform, handle, requestKey, validRequest]);
+    return request.release;
+  }, [platform, normalizedHandle, requestKey, validRequest]);
 
   return {
     data: state.key === requestKey ? state.data : [],
