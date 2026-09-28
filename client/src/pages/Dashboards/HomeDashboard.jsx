@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import useStats from "../../hooks/useStats";
 import { useSubmissionCalendar} from "../../hooks/useSubmissionCalendar";
@@ -9,6 +8,19 @@ const platforms = [
   { id: "codechef", label: "CodeChef", color: "#2f80ed" },
   { id: "leetcode", label: "LeetCode", color: "#f2c94c" },
 ];
+
+function buildActivity(calendars) {
+  const successfulCalendars = calendars.filter(({ handle, error }) => handle && !error);
+  const dates = [...new Set(successfulCalendars.flatMap(({ data }) => data.map(({ date }) => date)))].sort();
+
+  return dates.map((date) => {
+    const row = { date };
+    successfulCalendars.forEach(({ id, data }) => {
+      row[id] = data.find((item) => item.date === date)?.count || 0;
+    });
+    return row;
+  });
+}
 
 function HomeDashboard({ handles }) {
   const { days, setDays } = useProfile();
@@ -35,18 +47,7 @@ function HomeDashboard({ handles }) {
     { ...leetcodeCalendar, ...platforms[2], handle: handles.leetcode },
   ];
 
-  const activity = useMemo(() => {
-    const successfulCalendars = calendars.filter(({ handle, error }) => handle && !error);
-    const dates = [...new Set(successfulCalendars.flatMap(({ data }) => data.map(({ date }) => date)))].sort();
-
-    return dates.map((date) => {
-      const row = { date };
-      successfulCalendars.forEach(({ id, data }) => {
-        row[id] = data.find((item) => item.date === date)?.count || 0;
-      });
-      return row;
-    });
-  }, [calendars]);
+  const activity = buildActivity(calendars);
 
   const totalSolved = stats.reduce(
     (total, item) => total
@@ -96,7 +97,7 @@ function HomeDashboard({ handles }) {
                 <YAxis allowDecimals={false} stroke="#1f1f1f" fontSize={12} />
                 <Tooltip />
                 <Legend />
-                {platforms.filter(({ id }) => handles[id]).map(({ id, label, color }) => (
+                {calendars.filter(({ handle, error, loading }) => handle && !error && !loading).map(({ id, label, color }) => (
                   <Bar key={id} dataKey={id} name={label} stackId="submissions" fill={color} radius={[4, 4, 0, 0]} />
                 ))}
               </BarChart>
