@@ -61,6 +61,7 @@ async function fetchRecentAccepted(handle, fallbackSubmissions) {
                 id: submission.titleSlug,
                 name: submission.title,
                 rating: null,
+                url: `https://leetcode.com/problems/${submission.titleSlug}/`,
             });
         }
     });

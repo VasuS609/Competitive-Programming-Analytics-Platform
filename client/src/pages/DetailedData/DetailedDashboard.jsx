@@ -56,7 +56,7 @@ function DetailedDashboard({ handle, title, platform }) {
 
             </div>
 
-            <ProblemTable problems={data.problems || []} heading={platform === "leetcode" ? "Recently solved problems" : "Solved problems"} />
+            <ProblemTable platform={platform} problems={data.problems || []} heading={platform === "leetcode" ? "Recently solved problems" : "Solved problems"} />
 
         </section>
     );

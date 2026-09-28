@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-function ProblemTable({ problems, heading = "Solved problems" }) {
+function ProblemTable({ platform, problems, heading = "Solved problems" }) {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const pageCount = Math.max(1, Math.ceil(problems.length / pageSize));
@@ -20,10 +20,20 @@ function ProblemTable({ problems, heading = "Solved problems" }) {
                         </div>
         {!problems.length ? <p className="muted">Problem details are not available for this platform.</p> : <>
 
-            <div className="problem-list">{visibleProblems.map((problem, index) => 
-                <div className="problem-row" key={`${problem.id}-${problem.index}-${index}`}><span>{problem.name}</span>
-                <small>{problem.rating || "Unrated"}</small>
-                </div>)}
+            <div className="problem-list">{visibleProblems.map((problem, index) => {
+                const problemName = problem.url ? (
+                    <a href={problem.url} target="_blank" rel="noopener noreferrer">
+                        {problem.name}
+                    </a>
+                ) : <span>{problem.name}</span>;
+
+                return (
+                    <div className="problem-row" key={`${platform}-${problem.id}-${problem.index || index}`}>
+                        {problemName}
+                        <small>{problem.rating || "Unrated"}</small>
+                    </div>
+                );
+            })}
             </div>
             <div className="pagination"><button disabled={page === 1} onClick={() => setPage((current) => current - 1)}>Previous</button><span>Page {page} of {pageCount}</span><button disabled={page === pageCount} onClick={() => setPage((current) => current + 1)}>Next</button></div>
         </>}

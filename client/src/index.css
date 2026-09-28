@@ -65,6 +65,8 @@ button { cursor: pointer; }
 .table-heading select { margin-left: 6px; border: 1px solid #dfe5dd; border-radius: 6px; padding: 4px 7px; background: #f8faf7; }
 .problem-list { border-top: 1px solid #eef1ed; }
 .problem-row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eef1ed; color: #536159; font-size: 13px; }
+.problem-row a { color: inherit; cursor: pointer; text-decoration: none; }
+.problem-row a:hover, .problem-row a:focus-visible { color: #17211b; text-decoration: underline; }
 .problem-row small { color: #89958d; }
 .pagination { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; color: #89958d; font-size: 12px; }
 .pagination button { border: 1px solid #dfe5dd; border-radius: 6px; padding: 7px 10px; color: #536159; background: #fff; font-size: 11px; }

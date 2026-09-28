@@ -32,7 +32,10 @@ async function fetchFromCF(handle){
             rating: s.problem.rating,
             id: s.problem.contestId,
             index: s.problem.index,
-            tags: s.problem.tags
+            tags: s.problem.tags,
+            url: s.problem.contestId >= 100000
+                ? `https://codeforces.com/gym/${s.problem.contestId}/problem/${s.problem.index}`
+                : `https://codeforces.com/contest/${s.problem.contestId}/problem/${s.problem.index}`
         }))
     };
 
