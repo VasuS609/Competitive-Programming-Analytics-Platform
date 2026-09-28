@@ -5,6 +5,7 @@ const STORAGE_KEY = "dsa-tracker:profile:v1";
 const PLATFORMS = ["codeforces", "codechef", "leetcode"];
 const DEFAULT_PROFILE = {
   activePlatform: "codeforces",
+  days: 7,
   handles: {
     codeforces: "",
     codechef: "",
@@ -25,7 +26,11 @@ function validateProfile(value) {
     handles[platform] = handle;
   }
 
-  return { activePlatform: value.activePlatform, handles };
+  return {
+    activePlatform: value.activePlatform,
+    days: value.days === 30 ? 30 : 7,
+    handles,
+  };
 }
 
 function readProfile() {
@@ -72,9 +77,14 @@ export function ProfileProvider({ children }) {
     <ProfileContext.Provider
       value={{
         activePlatform: profile.activePlatform,
+        days: profile.days,
         handles: profile.handles,
         setActivePlatform,
         setHandle,
+        setDays: (days) => {
+          if (days !== 7 && days !== 30) return;
+          updateProfile({ days });
+        },
       }}
     >
       {children}
