@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import DetailedDashboard from "./DetailedDashboard";
+import DetailedDashboard from "../DetailedData/DetailedDashboard";
 import HomeDashboard from "./HomeDashboard";
 
 const platforms = [
@@ -9,17 +9,15 @@ const platforms = [
 ];
 
 function Dashboard() {
-  // 1. Initialize 'handles' directly from localStorage if it exists
+  
   const [handles, setHandles] = useState(() => {
     const saved = localStorage.getItem("cp_tracker_handles");
     return saved ? JSON.parse(saved) : { codeforces: "", codechef: "", leetcode: "" };
   });
 
-  // 2. Initialize 'draft' with whatever was loaded into 'handles'
   const [draft, setDraft] = useState(handles);
   const [selectedPlatform, setSelectedPlatform] = useState("codeforces");
 
-  // 3. Keep 'draft' sync'd if 'handles' ever changes programmatically
   useEffect(() => {
     setDraft(handles);
   }, [handles]);
@@ -30,15 +28,16 @@ function Dashboard() {
       Object.entries(draft).map(([platform, handle]) => [platform, handle.trim()])
     );
     
-    // 4. Update React state and commit to localStorage simultaneously
+   
     setHandles(updated);
     localStorage.setItem("cp_tracker_handles", JSON.stringify(updated));
   };
 
   return (
-    <main className="app-shell text-xl text-black">
+    <main className="app-shell text-black">
       <header className="topbar">
         <div className="brand"><span className="brand-mark">DS</span><span>Competitive Programming and DSA Tracker</span></div>
+        <div>Your Progress</div>
         <p className="topbar-note font-medium text-black">Your practice progress and patience, in one clear view.</p>
       </header>
 

@@ -1,7 +1,7 @@
-import ProblemTable from "../../components/blocks/ProblemTable";
+import ProblemTable from "./components/ProblemTable";
 import useStats from "../../hooks/useStats";
-import SubmissionCalendar from "../../components/submissions/SubmissionCalendar";
-import RatingChart from "../../components/Chart/RatingChart";
+import SubmissionCalendar from "./components/SubmissionCalendar";
+import RatingChart from "./components/RatingChart";
 
 //below, footer, more detiled view
 function DetailedDashboard({ handle, title, platform }) {
