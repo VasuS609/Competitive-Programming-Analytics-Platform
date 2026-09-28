@@ -140,6 +140,14 @@ function normalizeCodeChefRating(ratingData) {
   })).filter((item) => item.date && item.rating);
 }
 
+function parseSubmissionDays(value) {
+  if (value === undefined) return 7;
+
+  const days = Number(value);
+  if (!Number.isInteger(days)) return 7;
+  return Math.min(30, Math.max(1, days));
+}
+
 app.get('/api/:platform/stats/:handle', async (req, res) => {
   const platform = req.params.platform.toLowerCase();
   const service = getPlatformService(platform, 'stats');
@@ -160,7 +168,7 @@ app.get('/api/:platform/submissions/:handle', async (req, res) => {
   if (!service) return res.status(404).json({ error: 'Unsupported platform' });
 
   try {
-    res.json(await service(req.params.handle));
+    res.json(await service(req.params.handle, parseSubmissionDays(req.query.days)));
   } catch (error) {
     console.error(error);
     res.status(502).json({ error: error.message || 'Failed to fetch submissions' });

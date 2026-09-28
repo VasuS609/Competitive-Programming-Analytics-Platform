@@ -1,4 +1,5 @@
 const cache = {};
+const { buildCalendar, getLastNDates, toUTCDateString } = require("../../utils/dates");
 
 const CACHE_TTL = 10 * 60 * 1000;
 
@@ -11,42 +12,29 @@ async function fetchJson(url) {
   return response.json();
 }
 
-function getLastSevenDates() {
-  const dates = [];
-
-  const today = new Date();
-
-  for (let offset = 6; offset >= 0; offset -= 1) {
-    const date = new Date(today);
-
-    date.setDate(today.getDate() - offset);
-    dates.push(date.toISOString().slice(0, 10));
-  }
-
-  return dates;
-}
-
-async function getCodeforcesSubmissionCalendar(handle) {
+async function getCodeforcesSubmissionCalendar(handle, days = 7) {
   const cached = cache[handle];
 
-  if (cached && Date.now() < cached.expiresAt) return cached.data;
+  if (cached && Date.now() < cached.expiresAt) {
+    return buildCalendar(cached.counts, cached.firstActivityDate, days);
+  }
 
-  const dates = getLastSevenDates();
+  const dates = getLastNDates(30);
   const counts = Object.fromEntries(dates.map((date) => [date, 0]));
+  let firstActivityDate = null;
 
   const response = await fetchJson(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}`);
 
   response.result.forEach((submission) => {
-    const date = new Date(submission.creationTimeSeconds * 1000).toISOString().slice(0, 10);
+    const date = toUTCDateString(submission.creationTimeSeconds * 1000);
+    if (!firstActivityDate || date < firstActivityDate) firstActivityDate = date;
 
     if (date in counts) counts[date] += 1;
   });
 
-  const data = dates.map((date) => ({ date, count: counts[date] }));
+  cache[handle] = { counts, firstActivityDate, expiresAt: Date.now() + CACHE_TTL };
 
-  cache[handle] = { data, expiresAt: Date.now() + CACHE_TTL };
-
-  return data;
+  return buildCalendar(counts, firstActivityDate, days);
 }
 
 module.exports = { getCodeforcesSubmissionCalendar };
