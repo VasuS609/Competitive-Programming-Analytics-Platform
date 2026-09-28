@@ -25,7 +25,8 @@ function HomeDashboard({ handles }) {
     { id: "leetcode", ...leetcodeStats },
   ];
 
-  // Merge platforms by date (not by array index) so a shorter/failed calendar can't shift the days.
+
+  
   const cfDays = codeforcesCalendar.data;
   const ccDays = codechefCalendar.data;
   const lcDays = leetcodeCalendar.data;
