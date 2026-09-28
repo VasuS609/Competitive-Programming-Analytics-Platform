@@ -14,8 +14,6 @@ function getLastSevenDates() {
   return dates;
 }
 
-// LeetCode's calendar counts every submission (accepted or not) per UTC day.
-// Profile data is already cached in getLCStats, so no second cache is needed here.
 async function getLeetcodeSubmissionCalendar(handle) {
   const profile = await getLCStats(handle);
 

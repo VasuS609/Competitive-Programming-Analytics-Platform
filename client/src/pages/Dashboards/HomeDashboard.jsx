@@ -25,19 +25,24 @@ function HomeDashboard({ handles }) {
     { id: "leetcode", ...leetcodeStats },
   ];
 
+  // Merge platforms by date (not by array index) so a shorter/failed calendar can't shift the days.
+  const cfDays = codeforcesCalendar.data;
+  const ccDays = codechefCalendar.data;
+  const lcDays = leetcodeCalendar.data;
+
   const activity = useMemo(() => {
-    const calendars = [codeforcesCalendar, codechefCalendar, leetcodeCalendar];
+    const totals = new Map();
 
-    const dates = calendars.find(({ data }) =>
-        data.length)?.data.map(
-            ({ date })=> date) || [];
+    [cfDays, ccDays, lcDays].forEach((days) => {
+      days.forEach(({ date, count }) => {
+        totals.set(date, (totals.get(date) || 0) + (Number(count) || 0));
+      });
+    });
 
-    return dates.map((date, index) => ({
-        date, submissions: calendars.reduce(
-            (total, calendar) => total + (calendar.data[index]?.count || 0), 0) }
-        ));
-
-  }, [codeforcesCalendar, codechefCalendar, leetcodeCalendar]);
+    return [...totals.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, submissions]) => ({ date, submissions }));
+  }, [cfDays, ccDays, lcDays]);
 
   const totalSolved = stats.reduce(
     (total, item) => total
@@ -63,7 +68,7 @@ function HomeDashboard({ handles }) {
       <div className="content-grid">
         <section className="content-panel">
          
-          <div className="panel-heading"><h3>Questions solved, past 7 days</h3><span>Activity</span></div>
+          <div className="panel-heading"><h3>Submissions, past 7 days</h3><span>Activity</span></div>
 
           {activity.length ? (
             <ResponsiveContainer width="100%" height={240}>

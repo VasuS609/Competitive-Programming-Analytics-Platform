@@ -1,6 +1,6 @@
 const { LeetCode } = require("leetcode-query");
 
-const leetcode = new LeetCode(); // no Credential - public data only, works for any handle
+const leetcode = new LeetCode(); 
 const cache = {};
 const CACHE_TTL = 10 * 60 * 1000;
 
@@ -25,8 +25,8 @@ function normalizeRatingHistory(history) {
         .sort((a, b) => a.date.localeCompare(b.date));
 }
 
-// Contest info fails or is empty for users who never took part in a contest.
-// That must not take the whole LeetCode section down.
+
+
 async function fetchContestInfo(handle) {
     try {
         return await leetcode.user_contest_info(handle);
@@ -36,8 +36,7 @@ async function fetchContestInfo(handle) {
     }
 }
 
-// Recent accepted submissions. The public API only exposes a short recent window,
-// so this is a "recently solved" list, not the full solved list.
+
 async function fetchRecentAccepted(handle, fallbackSubmissions) {
     let accepted = [];
 
@@ -90,7 +89,8 @@ async function getCompleteUserData(handle) {
     const easySolved = find("Easy");
     const mediumSolved = find("Medium");
     const hardSolved = find("Hard");
-    // Prefer LeetCode's own "All" bucket, fall back to summing the three levels.
+   
+    
     const totalSolved = find("All") || easySolved + mediumSolved + hardSolved;
 
     return {
@@ -128,7 +128,6 @@ async function getLCStats(handle) {
     return data;
 }
 
-// Reuses the cached profile fetch instead of hitting LeetCode a second time.
 async function getLCRatingHistory(handle) {
     const stats = await getLCStats(handle);
     return stats.ratingHistory;
