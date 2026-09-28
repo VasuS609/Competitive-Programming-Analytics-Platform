@@ -26,6 +26,18 @@ async function getCompleteUserData(handle) {
 
     const { matchedUser, recentSubmissionList } = user;
     const contestRanking = contestInfo?.userContestRanking;
+    const recentAcceptedProblems = (recentSubmissionList || [])
+        .filter((submission) => submission.statusDisplay === 'Accepted')
+        .reduce((uniqueProblems, submission) => {
+            if (!uniqueProblems.has(submission.titleSlug)) {
+                uniqueProblems.set(submission.titleSlug, {
+                    id: submission.titleSlug,
+                    name: submission.title,
+                    rating: null,
+                });
+            }
+            return uniqueProblems;
+        }, new Map());
 
     const counts = matchedUser.submitStats.acSubmissionNum;
     const find = (level) => counts.find(c => c.difficulty === level)?.count || 0;
@@ -42,6 +54,8 @@ async function getCompleteUserData(handle) {
         rating: contestRanking?.rating || 0,
         currentRating: contestRanking?.rating || 0,
         ratingHistory: normalizeRatingHistory(contestInfo?.userContestRankingHistory),
+        submissionCalendar: matchedUser.submissionCalendar || '{}',
+        problems: [...recentAcceptedProblems.values()],
         recentSubmissions: recentSubmissionList || [],
         fetchedAt: new Date().toISOString()
     };
