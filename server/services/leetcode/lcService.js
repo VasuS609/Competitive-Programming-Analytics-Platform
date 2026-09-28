@@ -1,4 +1,5 @@
 const { LeetCode } = require("leetcode-query");
+const { getSolvedProblems, syncSolvedProblems } = require("../solvedProblemService");
 
 const leetcode = new LeetCode(); 
 const cache = {};
@@ -94,6 +95,9 @@ async function getCompleteUserData(handle) {
     
     const totalSolved = find("All") || easySolved + mediumSolved + hardSolved;
 
+    const recentProblems = await fetchRecentAccepted(handle, recentSubmissionList);
+    syncSolvedProblems("leetcode", handle, recentProblems);
+
     return {
         handle,
         totalSolved,
@@ -108,7 +112,7 @@ async function getCompleteUserData(handle) {
         currentRating: rating,
         ratingHistory: normalizeRatingHistory(contestInfo?.userContestRankingHistory),
         submissionCalendar: matchedUser.submissionCalendar || "{}",
-        problems: await fetchRecentAccepted(handle, recentSubmissionList),
+        problems: getSolvedProblems("leetcode", handle),
         recentSubmissions: recentSubmissionList || [],
         fetchedAt: new Date().toISOString(),
     };

@@ -1,4 +1,5 @@
 //todo: add simple in-mem cache 
+const { getSolvedProblems, syncSolvedProblems } = require("../solvedProblemService");
 
 const cache = {};
 
@@ -22,21 +23,24 @@ async function fetchFromCF(handle){
     const uniqueSubmissions = [...uniqueResultMap.values()];
     const profile = userProfile.result[0];
 
+    const fetchedProblems = uniqueSubmissions.map(s => ({
+        name: s.problem.name,
+        rating: s.problem.rating,
+        id: s.problem.contestId,
+        index: s.problem.index,
+        tags: s.problem.tags,
+        url: s.problem.contestId >= 100000
+            ? `https://codeforces.com/gym/${s.problem.contestId}/problem/${s.problem.index}`
+            : `https://codeforces.com/contest/${s.problem.contestId}/problem/${s.problem.index}`
+    }));
+    syncSolvedProblems("codeforces", handle, fetchedProblems);
+
     const response = {
         username: profile.handle,
         rank: profile.rank || 'Unrated',
         rating: profile.rating || 0,
         problemSolved: uniqueSubmissions.length,
-        problems: uniqueSubmissions.map(s => ({
-            name: s.problem.name,
-            rating: s.problem.rating,
-            id: s.problem.contestId,
-            index: s.problem.index,
-            tags: s.problem.tags,
-            url: s.problem.contestId >= 100000
-                ? `https://codeforces.com/gym/${s.problem.contestId}/problem/${s.problem.index}`
-                : `https://codeforces.com/contest/${s.problem.contestId}/problem/${s.problem.index}`
-        }))
+        problems: getSolvedProblems("codeforces", handle)
     };
 
     return response;
