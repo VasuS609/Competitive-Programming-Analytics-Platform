@@ -12,6 +12,9 @@
 body { margin: 0; min-width: 320px; background: #f5f7f2; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
+.app-navigation { display: flex; justify-content: center; gap: 6px; padding: 16px 24px 0; }
+.app-navigation a { border-bottom: 2px solid transparent; padding: 8px 12px; color: #718077; font-size: 13px; font-weight: 700; text-decoration: none; }
+.app-navigation a:hover, .app-navigation a.active { border-color: #17211b; color: #17211b; }
 
 .app-shell { max-width: 1240px; margin: 0 auto; padding: 28px 24px 64px; }
 .topbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-bottom: 28px; border-bottom: 1px solid #dfe5dd; }
