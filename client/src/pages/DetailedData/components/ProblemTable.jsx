@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-function ProblemTable({ platform, problems, heading = "Solved problems" }) {
+function ProblemTable({ platform, problems, totalSolved, heading = "Solved problems" }) {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const pageCount = Math.max(1, Math.ceil(problems.length / pageSize));
@@ -18,6 +18,11 @@ function ProblemTable({ platform, problems, heading = "Solved problems" }) {
                         </select>
                         </label>
                         </div>
+        {platform === "leetcode" && (
+            <p className="muted coverage-note">
+                Showing {problems.length} of {totalSolved ?? problems.length} solved. The list grows every time you sync.
+            </p>
+        )}
         {!problems.length ? <p className="muted">Problem details are not available for this platform.</p> : <>
 
             <div className="problem-list">{visibleProblems.map((problem, index) => {
