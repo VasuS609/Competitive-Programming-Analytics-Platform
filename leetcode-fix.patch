@@ -1,0 +1,330 @@
+diff --git a/client/src/components/blocks/ProblemTable.jsx b/client/src/components/blocks/ProblemTable.jsx
+index db5fbf5..b9d0536 100644
+--- a/client/src/components/blocks/ProblemTable.jsx
++++ b/client/src/components/blocks/ProblemTable.jsx
+@@ -1,13 +1,13 @@
+ import { useState } from "react";
+ 
+-function ProblemTable({ problems }) {
++function ProblemTable({ problems, heading = "Solved problems" }) {
+     const [page, setPage] = useState(1);
+     const [pageSize, setPageSize] = useState(10);
+     const pageCount = Math.max(1, Math.ceil(problems.length / pageSize));
+     const visibleProblems = problems.slice((page - 1) * pageSize, page * pageSize);
+ 
+     return <section className="table-panel">
+-        <div className="table-heading"><h3>Solved problems</h3><label>Rows <select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); }}><option value="10">10</option><option value="20">20</option></select></label></div>
++        <div className="table-heading"><h3>{heading}</h3><label>Rows <select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); }}><option value="10">10</option><option value="20">20</option></select></label></div>
+         {!problems.length ? <p className="muted">Problem details are not available for this platform.</p> : <>
+             <div className="problem-list">{visibleProblems.map((problem, index) => <div className="problem-row" key={`${problem.id}-${problem.index}-${index}`}><span>{problem.name}</span><small>{problem.rating || "Unrated"}</small></div>)}</div>
+             <div className="pagination"><button disabled={page === 1} onClick={() => setPage((current) => current - 1)}>Previous</button><span>Page {page} of {pageCount}</span><button disabled={page === pageCount} onClick={() => setPage((current) => current + 1)}>Next</button></div>
+diff --git a/client/src/pages/Dashboards/DetailedDashboard.jsx b/client/src/pages/Dashboards/DetailedDashboard.jsx
+index 23ae338..61129e5 100644
+--- a/client/src/pages/Dashboards/DetailedDashboard.jsx
++++ b/client/src/pages/Dashboards/DetailedDashboard.jsx
+@@ -56,7 +56,7 @@ function DetailedDashboard({ handle, title, platform }) {
+ 
+             </div>
+ 
+-            <ProblemTable problems={data.problems || []} />
++            <ProblemTable problems={data.problems || []} heading={platform === "leetcode" ? "Recently solved problems" : "Solved problems"} />
+ 
+         </section>
+     );
+diff --git a/client/src/pages/Dashboards/HomeDashboard.jsx b/client/src/pages/Dashboards/HomeDashboard.jsx
+index 8458efe..fe0ac65 100644
+--- a/client/src/pages/Dashboards/HomeDashboard.jsx
++++ b/client/src/pages/Dashboards/HomeDashboard.jsx
+@@ -25,19 +25,24 @@ function HomeDashboard({ handles }) {
+     { id: "leetcode", ...leetcodeStats },
+   ];
+ 
+-  const activity = useMemo(() => {
+-    const calendars = [codeforcesCalendar, codechefCalendar, leetcodeCalendar];
++  // Merge platforms by date (not by array index) so a shorter/failed calendar can't shift the days.
++  const cfDays = codeforcesCalendar.data;
++  const ccDays = codechefCalendar.data;
++  const lcDays = leetcodeCalendar.data;
+ 
+-    const dates = calendars.find(({ data }) =>
+-        data.length)?.data.map(
+-            ({ date })=> date) || [];
++  const activity = useMemo(() => {
++    const totals = new Map();
+ 
+-    return dates.map((date, index) => ({
+-        date, submissions: calendars.reduce(
+-            (total, calendar) => total + (calendar.data[index]?.count || 0), 0) }
+-        ));
++    [cfDays, ccDays, lcDays].forEach((days) => {
++      days.forEach(({ date, count }) => {
++        totals.set(date, (totals.get(date) || 0) + (Number(count) || 0));
++      });
++    });
+ 
+-  }, [codeforcesCalendar, codechefCalendar, leetcodeCalendar]);
++    return [...totals.entries()]
++      .sort(([a], [b]) => a.localeCompare(b))
++      .map(([date, submissions]) => ({ date, submissions }));
++  }, [cfDays, ccDays, lcDays]);
+ 
+   const totalSolved = stats.reduce(
+     (total, item) => total
+@@ -63,7 +68,7 @@ function HomeDashboard({ handles }) {
+       <div className="content-grid">
+         <section className="content-panel">
+          
+-          <div className="panel-heading"><h3>Questions solved, past 7 days</h3><span>Activity</span></div>
++          <div className="panel-heading"><h3>Submissions, past 7 days</h3><span>Activity</span></div>
+ 
+           {activity.length ? (
+             <ResponsiveContainer width="100%" height={240}>
+diff --git a/server/services/leetcode/lcService.js b/server/services/leetcode/lcService.js
+index c1c27c7..8f1aa06 100644
+--- a/server/services/leetcode/lcService.js
++++ b/server/services/leetcode/lcService.js
+@@ -1,7 +1,17 @@
+ const { LeetCode } = require("leetcode-query");
+ 
+-const leetcode = new LeetCode(); // no Credential — public data only, works for any handle
++const leetcode = new LeetCode(); // no Credential - public data only, works for any handle
+ const cache = {};
++const CACHE_TTL = 10 * 60 * 1000;
++
++const RECENT_AC_QUERY = `query recentAcSubmissions($username: String!, $limit: Int!) {
++  recentAcSubmissionList(username: $username, limit: $limit) {
++    id
++    title
++    titleSlug
++    timestamp
++  }
++}`;
+ 
+ function normalizeRatingHistory(history) {
+     if (!Array.isArray(history)) return [];
+@@ -10,83 +20,118 @@ function normalizeRatingHistory(history) {
+         .filter((contest) => contest.attended && contest.rating && contest.contest?.startTime)
+         .map((contest) => ({
+             date: new Date(Number(contest.contest.startTime) * 1000).toISOString().slice(0, 10),
+-            rating: Number(contest.rating),
+-        }));
++            rating: Math.round(Number(contest.rating)),
++        }))
++        .sort((a, b) => a.date.localeCompare(b.date));
++}
++
++// Contest info fails or is empty for users who never took part in a contest.
++// That must not take the whole LeetCode section down.
++async function fetchContestInfo(handle) {
++    try {
++        return await leetcode.user_contest_info(handle);
++    } catch (error) {
++        console.warn("leetcode contest info unavailable for", handle, "-", error.message);
++        return null;
++    }
++}
++
++// Recent accepted submissions. The public API only exposes a short recent window,
++// so this is a "recently solved" list, not the full solved list.
++async function fetchRecentAccepted(handle, fallbackSubmissions) {
++    let accepted = [];
++
++    try {
++        const res = await leetcode.graphql({
++            query: RECENT_AC_QUERY,
++            variables: { username: handle, limit: 50 },
++        });
++        accepted = res?.data?.recentAcSubmissionList || [];
++    } catch (error) {
++        console.warn("leetcode recent AC list unavailable for", handle, "-", error.message);
++    }
++
++    if (!accepted.length) {
++        accepted = (fallbackSubmissions || []).filter((s) => s.statusDisplay === "Accepted");
++    }
++
++    const unique = new Map();
++    accepted.forEach((submission) => {
++        if (!unique.has(submission.titleSlug)) {
++            unique.set(submission.titleSlug, {
++                id: submission.titleSlug,
++                name: submission.title,
++                rating: null,
++            });
++        }
++    });
++    return [...unique.values()];
+ }
+ 
+ async function getCompleteUserData(handle) {
+     const [user, contestInfo] = await Promise.all([
+         leetcode.user(handle),
+-        leetcode.user_contest_info(handle),
++        fetchContestInfo(handle),
+     ]);
+ 
+-    if (!user || !user.matchedUser) {
+-        throw new Error("LeetCode user not found");
++    if (!user?.matchedUser) {
++        const error = new Error(`LeetCode user "${handle}" not found`);
++        error.status = 404;
++        throw error;
+     }
+ 
+     const { matchedUser, recentSubmissionList } = user;
+     const contestRanking = contestInfo?.userContestRanking;
+-    const recentAcceptedProblems = (recentSubmissionList || [])
+-        .filter((submission) => submission.statusDisplay === 'Accepted')
+-        .reduce((uniqueProblems, submission) => {
+-            if (!uniqueProblems.has(submission.titleSlug)) {
+-                uniqueProblems.set(submission.titleSlug, {
+-                    id: submission.titleSlug,
+-                    name: submission.title,
+-                    rating: null,
+-                });
+-            }
+-            return uniqueProblems;
+-        }, new Map());
+-
+-    const counts = matchedUser.submitStats.acSubmissionNum;
+-    const find = (level) => counts.find(c => c.difficulty === level)?.count || 0;
++    const rating = contestRanking?.rating ? Math.round(contestRanking.rating) : 0;
++
++    const counts = matchedUser.submitStats?.acSubmissionNum || [];
++    const find = (level) => counts.find((c) => c.difficulty === level)?.count ?? 0;
+ 
++    const easySolved = find("Easy");
++    const mediumSolved = find("Medium");
++    const hardSolved = find("Hard");
++    // Prefer LeetCode's own "All" bucket, fall back to summing the three levels.
++    const totalSolved = find("All") || easySolved + mediumSolved + hardSolved;
+ 
+     return {
+         handle,
+-        totalSolved: find('All'),
+-        easySolved: find('Easy'),
+-        mediumSolved: find('Medium'),
+-        hardSolved: find('Hard'),
++        totalSolved,
++        problemSolved: totalSolved,
++        easySolved,
++        mediumSolved,
++        hardSolved,
+         rank: matchedUser.profile?.ranking || null,
+         globalRank: matchedUser.profile?.ranking || null,
+-        rating: contestRanking?.rating || 0,
+-        currentRating: contestRanking?.rating || 0,
++        contestGlobalRank: contestRanking?.globalRanking || null,
++        rating,
++        currentRating: rating,
+         ratingHistory: normalizeRatingHistory(contestInfo?.userContestRankingHistory),
+-        submissionCalendar: matchedUser.submissionCalendar || '{}',
+-        problems: [...recentAcceptedProblems.values()],
++        submissionCalendar: matchedUser.submissionCalendar || "{}",
++        problems: await fetchRecentAccepted(handle, recentSubmissionList),
+         recentSubmissions: recentSubmissionList || [],
+-        fetchedAt: new Date().toISOString()
++        fetchedAt: new Date().toISOString(),
+     };
+ }
+ 
+-async function getLCRatingHistory(handle) {
+-    const contestInfo = await leetcode.user_contest_info(handle);
+-    return normalizeRatingHistory(contestInfo?.userContestRankingHistory);
+-}
+-
+ async function getLCStats(handle) {
+-    const cached = cache[handle];
++    const key = String(handle).trim().toLowerCase();
++    const cached = cache[key];
+ 
+-    if(cached && Date.now() < cached.expiresAt){
+-        console.log('leetcode cache hit for: ', handle);
++    if (cached && Date.now() < cached.expiresAt) {
++        console.log("leetcode cache hit for:", key);
+         return cached.data;
+     }
+-    else
+-    {
+-        console.log('leetcode cache miss for: ', handle);
+-        const data = await getCompleteUserData(handle);
+-
+-        cache[handle] = {
+-            data, expiresAt: Date.now() + 10  * 60 * 1000
+-        };
+-        
+-        return data;        
+-    }
+-
+ 
++    console.log("leetcode cache miss for:", key);
++    const data = await getCompleteUserData(String(handle).trim());
++    cache[key] = { data, expiresAt: Date.now() + CACHE_TTL };
++    return data;
+ }
+ 
++// Reuses the cached profile fetch instead of hitting LeetCode a second time.
++async function getLCRatingHistory(handle) {
++    const stats = await getLCStats(handle);
++    return stats.ratingHistory;
++}
+ 
+-module.exports = { getLCStats, getLCRatingHistory };
+\ No newline at end of file
++module.exports = { getLCStats, getLCRatingHistory };
+diff --git a/server/services/leetcode/lcSubmissionsCalendar.js b/server/services/leetcode/lcSubmissionsCalendar.js
+index c353bef..1c22e39 100644
+--- a/server/services/leetcode/lcSubmissionsCalendar.js
++++ b/server/services/leetcode/lcSubmissionsCalendar.js
+@@ -1,6 +1,4 @@
+ const { getLCStats } = require("./lcService");
+-const cache = {};
+-const CACHE_TTL = 10 * 60 * 1000;
+ 
+ function getLastSevenDates() {
+   const dates = [];
+@@ -16,27 +14,27 @@ function getLastSevenDates() {
+   return dates;
+ }
+ 
+-async function fetchLeetcodeSubmissionCalendar(handle) {
++// LeetCode's calendar counts every submission (accepted or not) per UTC day.
++// Profile data is already cached in getLCStats, so no second cache is needed here.
++async function getLeetcodeSubmissionCalendar(handle) {
+   const profile = await getLCStats(handle);
+-  const calendarString = profile.submissionCalendar;
+-  const calendar = calendarString ? JSON.parse(calendarString) : {};
+-  const counts = Object.fromEntries(getLastSevenDates().map((date) => [date, 0]));
++
++  let calendar = {};
++  try {
++    calendar = JSON.parse(profile.submissionCalendar || "{}");
++  } catch {
++    calendar = {};
++  }
++
++  const dates = getLastSevenDates();
++  const counts = Object.fromEntries(dates.map((date) => [date, 0]));
+ 
+   Object.entries(calendar).forEach(([timestamp, count]) => {
+     const date = new Date(Number(timestamp) * 1000).toISOString().slice(0, 10);
+-    if (date in counts) counts[date] = Number(count) || 0;
++    if (date in counts) counts[date] += Number(count) || 0;
+   });
+ 
+-  return getLastSevenDates().map((date) => ({ date, count: counts[date] }));
+-}
+-
+-async function getLeetcodeSubmissionCalendar(handle) {
+-  const cached = cache[handle];
+-  if (cached && Date.now() < cached.expiresAt) return cached.data;
+-
+-  const data = await fetchLeetcodeSubmissionCalendar(handle);
+-  cache[handle] = { data, expiresAt: Date.now() + CACHE_TTL };
+-  return data;
++  return dates.map((date) => ({ date, count: counts[date] }));
+ }
+ 
+-module.exports = { getLeetcodeSubmissionCalendar };
+\ No newline at end of file
++module.exports = { getLeetcodeSubmissionCalendar };
