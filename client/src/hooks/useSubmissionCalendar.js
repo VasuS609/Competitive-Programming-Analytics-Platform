@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { API_URL } from "../api";
 import { getCachedRequest } from "./requestCache";
 
-export function useSubmissionCalendar(handle, platform) {
+export function useSubmissionCalendar(handle, platform, days = 7) {
   const [state, setState] = useState({ data: [], error: null, key: "" });
   const normalizedHandle = handle?.trim() || "";
-  const requestKey = `${platform}:${normalizedHandle}`;
+  const requestKey = `${platform}:${normalizedHandle}:${days}`;
   const validRequest = Boolean(normalizedHandle && platform);
 
   useEffect(() => {
@@ -14,8 +14,8 @@ export function useSubmissionCalendar(handle, platform) {
     }
 
     const request = getCachedRequest(
-      `${platform}:${normalizedHandle}:submissions`,
-      `${API_URL}/${platform}/submissions/${encodeURIComponent(normalizedHandle)}`,
+      `${platform}:${normalizedHandle}:submissions?days=${days}`,
+      `${API_URL}/${platform}/submissions/${encodeURIComponent(normalizedHandle)}?days=${days}`,
     );
 
     request.promise
@@ -27,7 +27,7 @@ export function useSubmissionCalendar(handle, platform) {
       });
 
     return request.release;
-  }, [platform, normalizedHandle, requestKey, validRequest]);
+  }, [platform, normalizedHandle, days, requestKey, validRequest]);
 
   return {
     data: state.key === requestKey ? state.data : [],

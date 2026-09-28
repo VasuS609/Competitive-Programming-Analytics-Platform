@@ -1,23 +1,25 @@
 import { useMemo } from "react";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import useStats from "../../hooks/useStats";
 import { useSubmissionCalendar} from "../../hooks/useSubmissionCalendar";
+import { useProfile } from "../../context/useProfile";
 
 const platforms = [
-  { id: "codeforces", label: "Codeforces" },
-  { id: "codechef", label: "CodeChef" },
-  { id: "leetcode", label: "LeetCode" },
+  { id: "codeforces", label: "Codeforces", color: "#e4572e" },
+  { id: "codechef", label: "CodeChef", color: "#2f80ed" },
+  { id: "leetcode", label: "LeetCode", color: "#f2c94c" },
 ];
 
 function HomeDashboard({ handles }) {
+  const { days, setDays } = useProfile();
 
   const codeforcesStats = useStats(handles.codeforces, "codeforces");
   const codechefStats = useStats(handles.codechef, "codechef");
   const leetcodeStats = useStats(handles.leetcode, "leetcode");
 
-  const codeforcesCalendar = useSubmissionCalendar(handles.codeforces, "codeforces");
-  const codechefCalendar = useSubmissionCalendar(handles.codechef, "codechef");
-  const leetcodeCalendar = useSubmissionCalendar(handles.leetcode, "leetcode");
+  const codeforcesCalendar = useSubmissionCalendar(handles.codeforces, "codeforces", days);
+  const codechefCalendar = useSubmissionCalendar(handles.codechef, "codechef", days);
+  const leetcodeCalendar = useSubmissionCalendar(handles.leetcode, "leetcode", days);
 
   const stats = [
     { id: "codeforces", ...codeforcesStats },
@@ -27,23 +29,24 @@ function HomeDashboard({ handles }) {
 
 
   
-  const cfDays = codeforcesCalendar.data;
-  const ccDays = codechefCalendar.data;
-  const lcDays = leetcodeCalendar.data;
+  const calendars = [
+    { ...codeforcesCalendar, ...platforms[0], handle: handles.codeforces },
+    { ...codechefCalendar, ...platforms[1], handle: handles.codechef },
+    { ...leetcodeCalendar, ...platforms[2], handle: handles.leetcode },
+  ];
 
   const activity = useMemo(() => {
-    const totals = new Map();
+    const successfulCalendars = calendars.filter(({ handle, error }) => handle && !error);
+    const dates = [...new Set(successfulCalendars.flatMap(({ data }) => data.map(({ date }) => date)))].sort();
 
-    [cfDays, ccDays, lcDays].forEach((days) => {
-      days.forEach(({ date, count }) => {
-        totals.set(date, (totals.get(date) || 0) + (Number(count) || 0));
+    return dates.map((date) => {
+      const row = { date };
+      successfulCalendars.forEach(({ id, data }) => {
+        row[id] = data.find((item) => item.date === date)?.count || 0;
       });
+      return row;
     });
-
-    return [...totals.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, submissions]) => ({ date, submissions }));
-  }, [cfDays, ccDays, lcDays]);
+  }, [calendars]);
 
   const totalSolved = stats.reduce(
     (total, item) => total
@@ -69,7 +72,21 @@ function HomeDashboard({ handles }) {
       <div className="content-grid">
         <section className="content-panel">
          
-          <div className="panel-heading"><h3>Submissions, past 7 days</h3><span>Activity</span></div>
+          <div className="panel-heading">
+            <h3>Submissions</h3>
+            <div className="range-toggle" aria-label="Submission range">
+              {[7, 30].map((range) => (
+                <button
+                  key={range}
+                  type="button"
+                  className={days === range ? "active" : ""}
+                  onClick={() => setDays(range)}
+                >
+                  {range}d
+                </button>
+              ))}
+            </div>
+          </div>
 
           {activity.length ? (
             <ResponsiveContainer width="100%" height={240}>
@@ -78,12 +95,19 @@ function HomeDashboard({ handles }) {
                 <XAxis dataKey="date" stroke="#1f1f1f" fontSize={12} />
                 <YAxis allowDecimals={false} stroke="#1f1f1f" fontSize={12} />
                 <Tooltip />
-                <Bar dataKey="submissions" fill="#e4572e" radius={[4, 4, 0, 0]} />
+                <Legend />
+                {platforms.filter(({ id }) => handles[id]).map(({ id, label, color }) => (
+                  <Bar key={id} dataKey={id} name={label} stackId="submissions" fill={color} radius={[4, 4, 0, 0]} />
+                ))}
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="muted">Load at least one profile to see activity.</p>
+            <p className="muted">No submission activity is available for the selected profiles.</p>
           )}
+
+          {calendars.filter(({ handle, error }) => handle && error).map(({ id, label, error }) => (
+            <p className="muted" key={id}>{label} submissions unavailable: {error.message}</p>
+          ))}
 
         </section>
 
