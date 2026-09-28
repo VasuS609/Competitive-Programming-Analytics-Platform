@@ -43,6 +43,9 @@ button { cursor: pointer; }
 .panel-heading { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; }
 .panel-heading h3, .content-panel h3, .table-heading h3 { margin: 0; font-size: 13px; letter-spacing: -.01em; }
 .panel-heading span { color: #9aa59e; font-size: 11px; }
+.range-toggle { display: flex; gap: 4px; }
+.range-toggle button { border: 1px solid #dfe5dd; border-radius: 6px; padding: 4px 7px; color: #718077; background: #fff; font-size: 11px; }
+.range-toggle button.active, .range-toggle button:hover { border-color: #17211b; color: #fff; background: #17211b; }
 .rating-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid #eef1ed; color: #536159; font-size: 13px; }
 .rating-row:last-child { border-bottom: 0; }
 .rating-row strong { color: #17211b; }
