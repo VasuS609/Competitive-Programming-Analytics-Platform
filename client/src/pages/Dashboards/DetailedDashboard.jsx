@@ -1,26 +1,26 @@
-import ProblemTable from "../blocks/ProblemTable";
+import ProblemTable from "../../components/blocks/ProblemTable";
 import useStats from "../../hooks/useStats";
-import SubmissionCalendar from "../submissions/SubmissionCalendar";
-import RatingChart from "../Chart/RatingChart";
+import SubmissionCalendar from "../../components/submissions/SubmissionCalendar";
+import RatingChart from "../../components/Chart/RatingChart";
 
 //below, footer, more detiled view
 function DetailedDashboard({ handle, title, platform }) {
     const { data, loading, error } = useStats(handle, platform);
 
     if(loading == true) {
-        return <div className="status-panel">Loading your dashboard...</div>;
+        return <div className="rounded-2xl bg-paper p-5 text-sm text-ink/60 shadow-sm">Loading your dashboard...</div>;
     }
 
     if(error != null){
-        return <div className="status-panel error">Could not load {title}: {error.message}</div>;
+        return <div className="rounded-2xl bg-paper p-5 text-sm text-red-600 shadow-sm">Could not load {title}: {error.message}</div>;
     }
 
     if(!data){
-        return <div className="status-panel">No {title} data found.</div>;
+        return <div className="rounded-2xl bg-paper p-5 text-sm text-ink/60 shadow-sm">No {title} data found.</div>;
     }
 
     const displayName = data.username || data.name || data.handle || handle;
-    
+
     const details = [
         ["Solved", data.problemSolved ?? data.totalSolved ?? 0],
         ["Rating", data.rating ?? data.currentRating ?? "Unavailable"],
@@ -33,28 +33,22 @@ function DetailedDashboard({ handle, title, platform }) {
     return (
         <section className="dashboard-stack">
 
-            <div className="dashboard-heading">
-                <div>
-                    <p className="eyebrow">
-                        {title}
-                    </p>
+                <div className="detail-heading">
                     <h2>{displayName}</h2>
-                </div>
-
-                <span className="platform-badge">{platform}</span>
+                    <span className="platform-badge">{platform}</span>
             </div>
 
-            <div className="metric-grid">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 {details.map(
-                    ([label, value]) => 
-                    
+                    ([label, value]) =>
+
                     <div className="metric" key={label}>
                         <span>{label}</span>
                         <strong>{value}</strong>
                     </div>)}
             </div>
 
-            <div className="chart-grid">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
                 <RatingChart handle={handle} platform={platform} title={title} />
 

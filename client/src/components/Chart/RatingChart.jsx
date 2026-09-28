@@ -31,18 +31,18 @@ function RatingChart({ handle, platform, title }) {
   const data = state.key === requestKey ? state.data : [];
   const error = state.key === requestKey ? state.error : null;
 
-  if (loading) return <p>Loading {title} rating...</p>;
-  if (error) return <p>Could not load {title} rating: {error.message}</p>;
-  if (!data.length) return <p className="muted">Rating history is not available for {title}.</p>;
+  if (loading) return <p className="text-sm text-ink/50">Loading {title} rating...</p>;
+  if (error) return <p className="text-sm text-red-600">Could not load {title} rating: {error.message}</p>;
+  if (!data.length) return <p className="text-sm text-ink/50">Rating history is not available for {title}.</p>;
 
   return (
-    <section className="chart-panel">
+    <section className="content-panel chart-panel">
       <h3>{title} rating history</h3>
       <ResponsiveContainer width="100%" height={240}>
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
-          <YAxis />
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e0" />
+          <XAxis dataKey="date" stroke="#1f1f1f" fontSize={12} />
+          <YAxis stroke="#1f1f1f" fontSize={12} />
           <Tooltip />
           <Line type="monotone" dataKey="rating" stroke="#e4572e" strokeWidth={3} dot={false} />
         </LineChart>

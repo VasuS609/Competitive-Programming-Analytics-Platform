@@ -1,6 +1,4 @@
-const { LeetCode } = require("leetcode-query");
-
-const leetcode = new LeetCode();
+const { getLCStats } = require("./lcService");
 const cache = {};
 const CACHE_TTL = 10 * 60 * 1000;
 
@@ -8,9 +6,10 @@ function getLastSevenDates() {
   const dates = [];
   const today = new Date();
 
+  today.setUTCHours(0, 0, 0, 0);
   for (let offset = 6; offset >= 0; offset -= 1) {
     const date = new Date(today);
-    date.setDate(today.getDate() - offset);
+    date.setUTCDate(today.getUTCDate() - offset);
     dates.push(date.toISOString().slice(0, 10));
   }
 
@@ -18,19 +17,8 @@ function getLastSevenDates() {
 }
 
 async function fetchLeetcodeSubmissionCalendar(handle) {
-  const response = await leetcode.graphql({
-    operationName: "userProfileCalendar",
-    query: `
-      query userProfileCalendar($username: String!) {
-        matchedUser(username: $username) {
-          userCalendar { submissionCalendar }
-        }
-      }
-    `,
-    variables: { username: handle },
-  });
-
-  const calendarString = response.data?.matchedUser?.userCalendar?.submissionCalendar;
+  const profile = await getLCStats(handle);
+  const calendarString = profile.submissionCalendar;
   const calendar = calendarString ? JSON.parse(calendarString) : {};
   const counts = Object.fromEntries(getLastSevenDates().map((date) => [date, 0]));
 

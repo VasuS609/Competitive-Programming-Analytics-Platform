@@ -3,7 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const { getCFStats, fetchRatingHistory } = require('./services/codeforces/cfService');
 const {addProblem, getProblemsByDate, getGoalProgress} = require('./services/problemService');
-const { getLCStats } = require('./services/leetcode/lcService');
+const { getLCStats, getLCRatingHistory } = require('./services/leetcode/lcService');
 const { getLeetcodeSubmissionCalendar } = require('./services/leetcode/lcSubmissionsCalendar');
 const { getCodeChefStats } = require('./services/codechef/codechefService');
 const { getCodechefSubmissionCalendar } = require('./services/codechef/ccSubmissionsCalendar');
@@ -104,7 +104,7 @@ const platformServices = {
   leetcode: {
     stats: getLCStats,
     submissions: getLeetcodeSubmissionCalendar,
-    rating: async () => [],
+    rating: getLCRatingHistory,
   },
 };
 
