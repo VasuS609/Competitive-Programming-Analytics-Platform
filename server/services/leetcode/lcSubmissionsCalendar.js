@@ -1,6 +1,4 @@
 const { getLCStats } = require("./lcService");
-const cache = {};
-const CACHE_TTL = 10 * 60 * 1000;
 
 function getLastSevenDates() {
   const dates = [];
@@ -16,27 +14,27 @@ function getLastSevenDates() {
   return dates;
 }
 
-async function fetchLeetcodeSubmissionCalendar(handle) {
+// LeetCode's calendar counts every submission (accepted or not) per UTC day.
+// Profile data is already cached in getLCStats, so no second cache is needed here.
+async function getLeetcodeSubmissionCalendar(handle) {
   const profile = await getLCStats(handle);
-  const calendarString = profile.submissionCalendar;
-  const calendar = calendarString ? JSON.parse(calendarString) : {};
-  const counts = Object.fromEntries(getLastSevenDates().map((date) => [date, 0]));
+
+  let calendar = {};
+  try {
+    calendar = JSON.parse(profile.submissionCalendar || "{}");
+  } catch {
+    calendar = {};
+  }
+
+  const dates = getLastSevenDates();
+  const counts = Object.fromEntries(dates.map((date) => [date, 0]));
 
   Object.entries(calendar).forEach(([timestamp, count]) => {
     const date = new Date(Number(timestamp) * 1000).toISOString().slice(0, 10);
-    if (date in counts) counts[date] = Number(count) || 0;
+    if (date in counts) counts[date] += Number(count) || 0;
   });
 
-  return getLastSevenDates().map((date) => ({ date, count: counts[date] }));
-}
-
-async function getLeetcodeSubmissionCalendar(handle) {
-  const cached = cache[handle];
-  if (cached && Date.now() < cached.expiresAt) return cached.data;
-
-  const data = await fetchLeetcodeSubmissionCalendar(handle);
-  cache[handle] = { data, expiresAt: Date.now() + CACHE_TTL };
-  return data;
+  return dates.map((date) => ({ date, count: counts[date] }));
 }
 
 module.exports = { getLeetcodeSubmissionCalendar };
