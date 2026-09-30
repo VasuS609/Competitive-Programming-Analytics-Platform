@@ -1,6 +1,6 @@
 # DSA Prep Tracker
 
-A full-stack dashboard I built to track my own competitive programming practice — pulls live stats from Codeforces, logs my daily solves against a configurable goal, and visualizes rating progress over time.
+A full-stack dashboard built to track my own competitive programming practice — pulls live stats from Platforms like Codeforces, Leetcode, Codechef, logs my daily solves against a configurable goal, and visualizes rating progress over time.
 
 Built as a personal tool I use daily, not a tutorial clone — the architecture (caching layer, REST API design, SQLite schema) evolved from real problems I hit while using it (e.g. CF's public API timing out, duplicate fetches across components).
 
@@ -66,14 +66,6 @@ This is a working, actively-used tool — not a finished product. What's live ri
 -  Local problem log (SQLite) with a configurable goal system
 -  Goal progress view
 
-## Roadmap
-
-- [ ] Problems-solved-by-difficulty chart (from own solve log)
-- [ ] Topic/tag breakdown (which DSA topics need more practice)
-- [ ] LeetCode integration (no official public API — needs a workaround)
-- [ ] Unified CF + LeetCode view
-- [ ] Auto-refresh / cron-style periodic data pull instead of fetch-on-mount
-- [ ] Combine the stats + rating-history endpoints into one cached response to halve external calls per page load
 
 ## What I learned building this
 
