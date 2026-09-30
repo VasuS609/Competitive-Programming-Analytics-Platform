@@ -1,6 +1,6 @@
 # DSA Prep Tracker
 
-A full-stack dashboard I built to track my own competitive programming practice — pulls live stats from Codeforces, logs my daily solves against a configurable goal, and visualizes rating progress over time.
+A full-stack dashboard built to track my own competitive programming practice — pulls live stats from Platforms like Codeforces, Leetcode, Codechef, logs my daily solves against a configurable goal, and visualizes rating progress over time.
 
 Built as a personal tool I use daily, not a tutorial clone — the architecture (caching layer, REST API design, SQLite schema) evolved from real problems I hit while using it (e.g. CF's public API timing out, duplicate fetches across components).
 
