@@ -74,8 +74,8 @@ function HomeDashboard({ handles }) {
         <section className="content-panel">
          
           <div className="panel-heading">
-            <h3>Solved</h3>
-            <div className="range-toggle" aria-label="Submission range">
+            <h3>Accepted problems per day</h3>
+            <div className="range-toggle" aria-label="Accepted problem range">
               {[7, 30].map((range) => (
                 <button
                   key={range}
@@ -113,7 +113,10 @@ function HomeDashboard({ handles }) {
         </section>
 
         <section className="content-panel">
-          <div className="panel-heading"><h3>Current ratings</h3><span>Live data</span></div>
+          <div className="panel-heading">
+            <h3>Current ratings</h3>
+            <span>Live data</span>
+          </div>
           {stats.map((item) => (
            
             <div className="rating-row" key={item.id}>

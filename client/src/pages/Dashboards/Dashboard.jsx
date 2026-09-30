@@ -68,7 +68,7 @@ function Dashboard() {
           Detailed data
         </NavLink>
       </nav>
-        <p className="topbar-note font-medium text-black">Your practice progress and patience, in one clear view.</p>
+
       </header>
 
       <section className="hero">

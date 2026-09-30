@@ -21,15 +21,22 @@ async function getCodeforcesSubmissionCalendar(handle, days = 7) {
 
   const dates = getLastNDates(30);
   const counts = Object.fromEntries(dates.map((date) => [date, 0]));
+  const acceptedProblemsByDate = Object.fromEntries(dates.map((date) => [date, new Set()]));
   let firstActivityDate = null;
 
   const response = await fetchJson(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}`);
 
   response.result.forEach((submission) => {
-    const date = toUTCDateString(submission.creationTimeSeconds * 1000);
-    if (!firstActivityDate || date < firstActivityDate) firstActivityDate = date;
+    if (submission.verdict !== "OK" || !submission.problem) return;
 
-    if (date in counts) counts[date] += 1;
+    const date = toUTCDateString(submission.creationTimeSeconds * 1000);
+    const problem = `${submission.problem.contestId || submission.problem.problemsetName || "problem"}:${submission.problem.index || submission.problem.name}`;
+
+    if (date in acceptedProblemsByDate) {
+      acceptedProblemsByDate[date].add(problem);
+      counts[date] = acceptedProblemsByDate[date].size;
+      if (!firstActivityDate || date < firstActivityDate) firstActivityDate = date;
+    }
   });
 
   cache[handle] = { counts, firstActivityDate, expiresAt: Date.now() + CACHE_TTL };
