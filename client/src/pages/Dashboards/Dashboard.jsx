@@ -1,5 +1,6 @@
 import { useState } from "react";
 import HomeDashboard from "./HomeDashboard";
+import { NavLink } from "react-router-dom";
 import { useProfile } from "../../context/useProfile";
 
 const platforms = [
@@ -49,8 +50,24 @@ function Dashboard() {
   return (
     <main className="app-shell text-black">
       <header className="topbar">
-        <div className="brand"><span className="brand-mark">DS</span><span>Competitive Programming and DSA Tracker</span></div>
-        <div>Your Progress</div>
+        <div className="brand">
+          <span className="brand-mark">DS</span>
+          <span>Competitive Programming and DSA Tracker</span></div>
+          <nav className="app-navigation" aria-label="Primary navigation">
+        <NavLink
+          to="/"
+          className={({ isActive }) => (isActive ? "active" : "")}
+          end
+        >
+          Home
+        </NavLink>
+        <NavLink
+          to="/detailed"
+          className={({ isActive }) => (isActive ? "active" : "")}
+        >
+          Detailed data
+        </NavLink>
+      </nav>
         <p className="topbar-note font-medium text-black">Your practice progress and patience, in one clear view.</p>
       </header>
 
@@ -80,3 +97,11 @@ function Dashboard() {
 }
 
 export default Dashboard;
+
+
+/*
+
+    <>
+      
+    </>
+*/

@@ -1,0 +1,29 @@
+{
+  "name": "competitive-programming-dashboard",
+  "version": "1.0.0",
+  "description": "A full-stack dashboard to track competitive programming practice, pull live Codeforces stats, log daily solves, and visualize rating progress over time.",
+  "main": "server/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "npm run install:all",
+    "install:all": "concurrently \"npm --prefix server install\" \"npm --prefix client install\"",
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vasus609/Competitive-Programming-Dashboard.git"
+  },
+  "keywords": [
+    "competitive-programming",
+    "codeforces"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vasus609/Competitive-Programming-Dashboard/issues"
+  },
+  "homepage": "https://github.com/vasus609/Competitive-Programming-Dashboard#readme",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
