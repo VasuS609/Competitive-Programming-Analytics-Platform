@@ -74,7 +74,7 @@ function HomeDashboard({ handles }) {
         <section className="content-panel">
          
           <div className="panel-heading">
-            <h3>Submissions</h3>
+            <h3>Solved</h3>
             <div className="range-toggle" aria-label="Submission range">
               {[7, 30].map((range) => (
                 <button
@@ -83,7 +83,7 @@ function HomeDashboard({ handles }) {
                   className={days === range ? "active" : ""}
                   onClick={() => setDays(range)}
                 >
-                  {range}d
+                  {range}
                 </button>
               ))}
             </div>

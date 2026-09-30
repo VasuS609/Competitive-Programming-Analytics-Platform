@@ -10,7 +10,7 @@ function SubmissionCalendar({ handle, platform, title }) {
 
   return (
     <section className="content-panel chart-panel">
-      <h3>{title} submissions, past 7 days</h3>
+      <h3>{title} Accepted, past 7 days</h3>
       <ResponsiveContainer width="100%" height={240}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e0" />

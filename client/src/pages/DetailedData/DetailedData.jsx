@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import DetailedDashboard from "./DetailedDashboard";
 import { useProfile } from "../../context/useProfile";
 
@@ -15,6 +15,21 @@ function DetailedData() {
 
   return (
     <main className="app-shell text-black">
+      <header className="topbar">
+        <div className="brand">
+          <span className="brand-mark">DS</span>
+          <span>Competitive Programming and DSA Tracker</span>
+        </div>
+        <nav className="app-navigation" aria-label="Primary navigation">
+          <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>
+            Home
+          </NavLink>
+          <NavLink to="/detailed" className={({ isActive }) => (isActive ? "active" : "")}>
+            Detailed data
+          </NavLink>
+        </nav>
+      </header>
+
       <section className="hero">
         <p className="eyebrow">Detailed progress</p>
         <h1>Profile data, one platform at a time.</h1>
