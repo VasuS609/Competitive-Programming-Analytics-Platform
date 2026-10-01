@@ -1,9 +1,9 @@
-const { getLCStats, getLCRatingHistory } = require('./services/leetcode/lcService');
-const { getLeetcodeSubmissionCalendar } = require('./services/leetcode/lcSubmissionsCalendar');
-const { getCodeChefStats } = require('./services/codechef/codechefService');
-const { getCodechefSubmissionCalendar } = require('./services/codechef/ccSubmissionsCalendar');
-const { getCodeforcesSubmissionCalendar } = require('./services/codeforces/cfSubmissionsCalendar');
-const { getCFStats, fetchRatingHistory } = require('./services/codeforces/cfService');
+const { getLCStats, getLCRatingHistory } = require('../../services/leetcode/lcService');
+const { getLeetcodeSubmissionCalendar } = require('../../services/leetcode/lcSubmissionsCalendar');
+const { getCodeChefStats } = require('../../services/codechef/codechefService');
+const { getCodechefSubmissionCalendar } = require('../../services/codechef/ccSubmissionsCalendar');
+const { getCodeforcesSubmissionCalendar } = require('../../services/codeforces/cfSubmissionsCalendar');
+const { getCFStats, fetchRatingHistory } = require('../../services/codeforces/cfService');
 
 const platformServices = {
   codeforces: {
