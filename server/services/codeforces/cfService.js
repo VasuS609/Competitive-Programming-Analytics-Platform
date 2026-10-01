@@ -1,4 +1,3 @@
-//todo: add simple in-mem cache 
 const { getSolvedProblems, syncSolvedProblems } = require("../solvedProblemService");
 
 const cache = {};
@@ -10,16 +9,13 @@ async function fetchFromCF(handle){
         fetchJson(`https://codeforces.com/api/user.info?handles=${handle}`)
     ]);
 
-    //todo: implement filter to result to only verdict === 'OK'
     const requiredSubmission = userSubmission.result.filter(s => s.verdict === 'OK');
 
-    //todo: dedupe by problem.contestID + '-' + problem.index (use set or map)
     const uniqueResultMap = new Map(
         requiredSubmission.map(s => [`${s.problem.contestId} - ${s.problem.index}`, s])
     )
     
 
-    //todo: log the count of unique solved problem and log just first 3 deduped problem (with rating and tags)
     const uniqueSubmissions = [...uniqueResultMap.values()];
     const profile = userProfile.result[0];
 
@@ -48,7 +44,6 @@ async function fetchFromCF(handle){
     // fetch -> filter ok -> deduplicate -> count total number of problem solved -> log result
 
 }
-
 
 async function fetchJson(url){
     const response = await fetch(url);

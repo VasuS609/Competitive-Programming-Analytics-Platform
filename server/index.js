@@ -1,112 +1,51 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { getCFStats, fetchRatingHistory } = require('./services/codeforces/cfService');
-const {addProblem, getProblemsByDate, getGoalProgress} = require('./services/problemService');
-const { getLCStats, getLCRatingHistory } = require('./services/leetcode/lcService');
-const { getLeetcodeSubmissionCalendar } = require('./services/leetcode/lcSubmissionsCalendar');
-const { getCodeChefStats } = require('./services/codechef/codechefService');
-const { getCodechefSubmissionCalendar } = require('./services/codechef/ccSubmissionsCalendar');
-const { getCodeforcesSubmissionCalendar } = require('./services/codeforces/cfSubmissionsCalendar');
+const { default: rateLimit } = require('express-rate-limit');
 
-
-const { default: rateLimit } = require("express-rate-limit");
-
-const limiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 60,
-})
+// Services & Aggregators
+const { addProblem, getProblemsByDate, getGoalProgress } = require('./services/goals/problemService');
+const getPlatformService = require('./getPlatformServices');
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 5000;
+
+// Middleware Config
+
+// Global Rate Limiting (60 requests per minute)
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
+  message: { error: 'Too many requests, please try again later.' }
+});
+
+app.use(cors({
+  origin: process.env.CLIENT_ORIGIN || '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE']
+}));
+
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 app.use(limiter);
 
-app.get('/api/health', (req, res) => {
-    res.json({status: 'ok'});
-})
+// Helper & Utility Functions
 
+// Validates and constrains submission day range (1 to 30 days).
+ 
+function parseSubmissionDays(value) {
+  if (value === undefined) return 7;
 
-app.post('/api/problems', (req, res) => {
-  try {
-    const {date, name, url, rating, source, tags} = req.body || {};
+  const days = Number(value);
+  if (!Number.isInteger(days) || days <= 0) return 7;
 
-    if (!date || !name || !url || !rating || !source || !tags) {
-      
-      return res.status(400).json({
-        message: 'date, name, url, rating, source and tags are required'
-      });
-    }
+  return Math.min(30, Math.max(1, days));
+}
 
-    addProblem({date, name, url, rating, source, tags});
-    res.status(201).json({
-      message: 'success',
-      data: {date, name, url, rating, source, tags}
-    });
-  }
-  catch(e) {
-    console.error(e);
-
-    res.status(500).json({
-        message: "Unexpected error occured",
-        error: e.message
-    })
-  }
-});
-
-
-app.get('/api/problems/:date', (req, res) => {
-  // 1. call getProblemsByDate(req.params.date)
-
-  try{
-    const data = getProblemsByDate(req.params.date);
-    // 2. send it back as JSON
-    res.json(data);
-  }catch(e){
-    res.status(500).json({
-        message: "Unexpected error occured",
-        error: e.message
-    })
-  }
-
-  // 3. try/catch, 500 on failure
-});
-
-
-app.get('/api/goal/:date', (req, res) =>{
-  try{
-    const progress = getGoalProgress(req.params.date);
-    res.json(progress);
-  }catch(e){
-    console.error(e);
-    res.status(500).json({error: "Failed to get the progress"});
-  }
-})
-
-
-const platformServices = {
-  codeforces: {
-    stats: getCFStats,
-    submissions: getCodeforcesSubmissionCalendar,
-    rating: async (handle) => fetchRatingHistory(handle),
-  },
-  codechef: {
-    stats: getCodeChefStats,
-    submissions: getCodechefSubmissionCalendar,
-    rating: async (handle) => {
-      const data = await getCodeChefStats(handle);
-      return normalizeCodeChefRating(data.ratingData);
-    },
-  },
-  leetcode: {
-    stats: getLCStats,
-    submissions: getLeetcodeSubmissionCalendar,
-    rating: getLCRatingHistory,
-  },
-};
+/**
+ * Normalizes user statistics across different platform schema responses.
+ */
 
 function normalizeStats(platform, data, handle) {
   const solved = data.problemSolved ?? data.totalSolved ?? 0;
@@ -127,71 +66,136 @@ function normalizeStats(platform, data, handle) {
   };
 }
 
-function getPlatformService(platform, type) {
-  return platformServices[platform]?.[type];
-}
+// 
+// Health Check Route
 
-function normalizeCodeChefRating(ratingData) {
-  if (!Array.isArray(ratingData)) return [];
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
-  return ratingData.map((item) => ({
-    date: item.rating_date || item.date || item.end_date || '',
-    rating: Number(item.rating || item.newRating || item.rating_number || 0),
-  })).filter((item) => item.date && item.rating);
-}
+// Problem Tracker & Goal Routes
 
-function parseSubmissionDays(value) {
-  if (value === undefined) return 7;
+app.post('/api/problems', (req, res, next) => {
+  try {
+    const { date, name, url, rating, source, tags } = req.body || {};
 
-  const days = Number(value);
-  if (!Number.isInteger(days)) return 7;
-  return Math.min(30, Math.max(1, days));
-}
+    // Basic payload presence check
+    if (!date || !name || !url || !rating || !source || !tags) {
+      return res.status(400).json({
+        error: 'Missing required fields: date, name, url, rating, source, and tags are required.'
+      });
+    }
 
-app.get('/api/:platform/stats/:handle', async (req, res) => {
+    const newProblem = { date, name, url, rating, source, tags };
+    addProblem(newProblem);
+
+    return res.status(201).json({
+      message: 'Problem added successfully',
+      data: newProblem
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/problems/:date', (req, res, next) => {
+  try {
+    const data = getProblemsByDate(req.params.date);
+    return res.json(data);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/goal/:date', (req, res, next) => {
+  try {
+    const progress = getGoalProgress(req.params.date);
+    return res.json(progress);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Dynamic Platform Integration Routes
+
+// Platform User Stats
+app.get('/api/:platform/stats/:handle', async (req, res, next) => {
   const platform = req.params.platform.toLowerCase();
+  const { handle } = req.params;
+
+  if (!handle) {
+    return res.status(400).json({ error: 'User handle is required' });
+  }
+
   const service = getPlatformService(platform, 'stats');
-  if (!service) return res.status(404).json({ error: 'Unsupported platform' });
-  if (!req.params.handle) return res.status(400).json({ error: 'Handle is required' });
+  if (!service) {
+    return res.status(404).json({ error: `Platform '${platform}' is not supported` });
+  }
 
   try {
-    const data = await service(req.params.handle);
-    res.json(normalizeStats(platform, data, req.params.handle));
+    const data = await service(handle);
+    return res.json(normalizeStats(platform, data, handle));
   } catch (error) {
-    console.error(error);
-    res.status(error.status === 404 ? 404 : 502).json({ error: error.message || 'Failed to fetch stats' });
+    next({ status: error.status || 502, message: error.message || 'Failed to fetch platform stats' });
   }
 });
 
-app.get('/api/:platform/submissions/:handle', async (req, res) => {
-  const service = getPlatformService(req.params.platform.toLowerCase(), 'submissions');
-  if (!service) return res.status(404).json({ error: 'Unsupported platform' });
+// Platform Submission History
+app.get('/api/:platform/submissions/:handle', async (req, res, next) => {
+  const platform = req.params.platform.toLowerCase();
+  const { handle } = req.params;
+
+  const service = getPlatformService(platform, 'submissions');
+  if (!service) {
+    return res.status(404).json({ error: `Platform '${platform}' is not supported` });
+  }
 
   try {
-    res.json(await service(req.params.handle, parseSubmissionDays(req.query.days)));
+    const days = parseSubmissionDays(req.query.days);
+    const submissions = await service(handle, days);
+    return res.json(submissions);
   } catch (error) {
-    console.error(error);
-    res.status(502).json({ error: error.message || 'Failed to fetch submissions' });
+    next({ status: 502, message: error.message || 'Failed to fetch submission history' });
   }
 });
 
-app.get('/api/:platform/rating/:handle', async (req, res) => {
-  const service = getPlatformService(req.params.platform.toLowerCase(), 'rating');
-  if (!service) return res.status(404).json({ error: 'Unsupported platform' });
+// Platform Rating History
+app.get('/api/:platform/rating/:handle', async (req, res, next) => {
+  const platform = req.params.platform.toLowerCase();
+  const { handle } = req.params;
+
+  const service = getPlatformService(platform, 'rating');
+  if (!service) {
+    return res.status(404).json({ error: `Platform '${platform}' is not supported` });
+  }
 
   try {
-    res.json(await service(req.params.handle));
+    const ratingData = await service(handle);
+    return res.json(ratingData);
   } catch (error) {
-    console.error(error);
-    res.status(502).json({ error: error.message || 'Failed to fetch rating history' });
+    next({ status: 502, message: error.message || 'Failed to fetch rating history' });
   }
 });
 
+// Fallback & Error Handling Middleware
 
+// 404 Handler for Undefined Routes
+app.use((req, res) => {
+  res.status(404).json({ error: 'Endpoint not found' });
+});
 
+// Centralized Express Error Handler
+app.use((err, req, res, next) => {
+  console.error('[Error]', err);
 
-const port = process.env.PORT || 5000;
+  const status = err.status || 500;
+  const message = err.message || 'An unexpected internal server error occurred';
 
-app.listen(port, () => {
-    console.log(`Server is running on port: ${port}`);
-})
+  res.status(status).json({ error: message });
+});
+
+// Server Initialization
+
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});

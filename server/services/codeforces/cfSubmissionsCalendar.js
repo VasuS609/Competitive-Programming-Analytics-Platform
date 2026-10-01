@@ -6,7 +6,6 @@ const CACHE_TTL = 10 * 60 * 1000;
 async function fetchJson(url) {
 
   const response = await fetch(url);
-
   if (!response.ok) throw new Error(`Codeforces API Error ${response.status}`);
 
   return response.json();

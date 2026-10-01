@@ -5,5 +5,6 @@ export async function request(path, options) {
   const body = await response.json().catch(() => ({}));
 
   if (!response.ok) throw new Error(body.error || body.message || "Request failed");
+  
   return body;
 }

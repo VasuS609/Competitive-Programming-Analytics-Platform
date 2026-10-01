@@ -1,6 +1,6 @@
 //I have taken ai help to understand and write these logics and code though i know what i am doing :)
 
-const db = require('../db');
+const db = require('../../db');
 
 function addProblem({date, name, url, rating, source, tags}) {  
     const stmt = db.prepare(`

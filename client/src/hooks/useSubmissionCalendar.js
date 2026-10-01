@@ -4,7 +4,9 @@ import { getCachedRequest } from "./requestCache";
 
 export function useSubmissionCalendar(handle, platform, days = 7) {
   const [state, setState] = useState({ data: [], error: null, key: "" });
+
   const normalizedHandle = handle?.trim() || "";
+
   const requestKey = `${platform}:${normalizedHandle}:${days}`;
   const validRequest = Boolean(normalizedHandle && platform);
 
@@ -27,6 +29,7 @@ export function useSubmissionCalendar(handle, platform, days = 7) {
       });
 
     return request.release;
+    
   }, [platform, normalizedHandle, days, requestKey, validRequest]);
 
   return {

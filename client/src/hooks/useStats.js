@@ -5,16 +5,18 @@ const PLATFORMS = ["codeforces", "codechef", "leetcode"];
 
 export function useStats(handle, platform) {
     const [state, setState] = useState({ data: null, error: null, key: "" });
-    const normalizedHandle = handle?.trim() || "";
-    const requestKey = `${platform}:${normalizedHandle}`;
-    const validRequest = Boolean(normalizedHandle && PLATFORMS.includes(platform));
+
+    const normalizedHandle = handle?.trim() || ""; //cleaning up white spaces
+    const requestKey = `${platform}:${normalizedHandle}`; //unique id eg leetcode:vaxh
+    const validRequest = Boolean(normalizedHandle && PLATFORMS.includes(platform)); //if platform exist and handle exists
 
     useEffect(() => {
+
         if (!validRequest) {
             return undefined;
         }
 
-        const request = getCachedRequest(
+        const request = getCachedRequest( //checking already in cache?
             `${platform}:${normalizedHandle}:stats`,
             `${API_URL}/${platform}/stats/${encodeURIComponent(normalizedHandle)}`,
         );
