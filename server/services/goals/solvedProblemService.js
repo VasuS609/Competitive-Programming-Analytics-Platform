@@ -1,4 +1,4 @@
-const { prepare } = require("../db");
+const { prepare } = require("../../db");
 
 const upsertProblem = prepare(`
   INSERT INTO solved_problems
