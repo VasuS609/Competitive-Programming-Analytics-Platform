@@ -76,4 +76,4 @@ This is a working, actively-used tool — not a finished product. What's live ri
 
 ---
 
-*This project is under active daily development as I continue my DSA prep — new features get added as I need them.*
+*This project is under development as I continue my DSA prep — new features get added as I need them.*
