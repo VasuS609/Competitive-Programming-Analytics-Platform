@@ -20,16 +20,17 @@ function ProfileForm({ activePlatform, handles, setActivePlatform, setHandle }) 
 
   return (
     <form className="handle-form" onSubmit={saveHandle}>
-      <label className="field-label">
+      <label className="field-label items-center">
         Platform
         <select
           value={activePlatform}
           onChange={(event) => setActivePlatform(event.target.value)}
+          className="border rounded px-2 py-3"
         >
           {platforms.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
         </select>
       </label>
-      <label className="field-label">
+      <label className="field-label items-center">
         Username
         <input
           value={draft}
@@ -98,10 +99,3 @@ function Dashboard() {
 
 export default Dashboard;
 
-
-/*
-
-    <>
-      
-    </>
-*/
