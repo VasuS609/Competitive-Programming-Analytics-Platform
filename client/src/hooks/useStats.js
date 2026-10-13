@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { API_URL } from "../api";
 import { getCachedRequest } from "./requestCache";
-const PLATFORMS = ["codeforces", "codechef", "leetcode"];
+const PLATFORMS = ["codeforces", "codechef", "leetcode", "gfg", "github"];
 
 export function useStats(handle, platform) {
     const [state, setState] = useState({ data: null, error: null, key: "" });

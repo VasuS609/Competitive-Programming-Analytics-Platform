@@ -7,6 +7,8 @@ const platforms = [
   { id: "codeforces", label: "Codeforces", color: "#e4572e" },
   { id: "codechef", label: "CodeChef", color: "#2f80ed" },
   { id: "leetcode", label: "LeetCode", color: "#f2c94c" },
+  { id: "gfg", label: "GeeksForGeeks", color: "#2f8d46" },
+  { id: "github", label: "GitHub", color: "#24292f" },
 ];
 
 function buildActivity(calendars) {
@@ -28,15 +30,21 @@ function HomeDashboard({ handles }) {
   const codeforcesStats = useStats(handles.codeforces, "codeforces");
   const codechefStats = useStats(handles.codechef, "codechef");
   const leetcodeStats = useStats(handles.leetcode, "leetcode");
+  const gfgStats = useStats(handles.gfg, "gfg");
+  const githubStats = useStats(handles.github, "github");
 
   const codeforcesCalendar = useSubmissionCalendar(handles.codeforces, "codeforces", days);
   const codechefCalendar = useSubmissionCalendar(handles.codechef, "codechef", days);
   const leetcodeCalendar = useSubmissionCalendar(handles.leetcode, "leetcode", days);
+  const gfgCalendar = useSubmissionCalendar(handles.gfg, "gfg", days);
+  const githubCalendar = useSubmissionCalendar(handles.github, "github", days);
 
   const stats = [
     { id: "codeforces", ...codeforcesStats },
     { id: "codechef", ...codechefStats },
     { id: "leetcode", ...leetcodeStats },
+    { id: "gfg", ...gfgStats },
+    { id: "github", ...githubStats },
   ];
 
 
@@ -45,6 +53,8 @@ function HomeDashboard({ handles }) {
     { ...codeforcesCalendar, ...platforms[0], handle: handles.codeforces },
     { ...codechefCalendar, ...platforms[1], handle: handles.codechef },
     { ...leetcodeCalendar, ...platforms[2], handle: handles.leetcode },
+    { ...gfgCalendar, ...platforms[3], handle: handles.gfg },
+    { ...githubCalendar, ...platforms[4], handle: handles.github },
   ];
 
   const activity = buildActivity(calendars);
@@ -55,20 +65,10 @@ function HomeDashboard({ handles }) {
 
   return (
     <section>
-
-      <div className="summary-grid">
-        <div className="stat-card">
-          <span className="stat-label">Total solved</span>
-          <strong className="stat-value">{totalSolved}</strong>
-          <small className="stat-note">Across loaded profiles</small>
-        </div>
-
-        <div className="stat-card">
-          <span className="stat-label">Platforms loaded</span>
-          <strong className="stat-value">{stats.filter((item) => item.data).length}/3</strong>
-          <small className="stat-note">Live profile data</small>
-        </div>
-      </div>
+      <section className="content-panel heat-map-panel">
+        <h3>Submission heat map</h3>
+        <div id="heat-map" data-heat-js="{ 'defaultView': 'map' }"></div>
+      </section>
 
       <div className="content-grid">
         <section className="content-panel">
@@ -88,6 +88,7 @@ function HomeDashboard({ handles }) {
               ))}
             </div>
           </div>
+
 
           {activity.length ? (
             <ResponsiveContainer width="100%" height={240}>
@@ -112,6 +113,21 @@ function HomeDashboard({ handles }) {
 
         </section>
 
+
+      <div className="summary-grid">
+        
+        <div className="stat-card">
+          <span className="stat-label">Total solved</span>
+          <strong className="stat-value">{totalSolved}</strong>
+          <small className="stat-note">Across loaded profiles</small>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-label">Platforms loaded</span>
+          <strong className="stat-value">{stats.filter((item) => item.data).length}/5</strong>
+          <small className="stat-note">Live profile data</small>
+        </div>
+
         <section className="content-panel">
           <div className="panel-heading">
             <h3>Current ratings</h3>
@@ -127,6 +143,9 @@ function HomeDashboard({ handles }) {
           ))}
           
         </section>
+      </div>
+
+        
       </div>
 
     </section>

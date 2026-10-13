@@ -4,6 +4,8 @@ const { getCodeChefStats } = require('../../services/codechef/codechefService');
 const { getCodechefSubmissionCalendar } = require('../../services/codechef/ccSubmissionsCalendar');
 const { getCodeforcesSubmissionCalendar } = require('../../services/codeforces/cfSubmissionsCalendar');
 const { getCFStats, fetchRatingHistory } = require('../../services/codeforces/cfService');
+const { getGfgStats, getGfgSubmissionCalendar } = require('../../services/geeksforgeeks/gfgService');
+const { getGithubStats, getGithubSubmissionCalendar } = require('../../services/github/githubService');
 
 const platformServices = {
   codeforces: {
@@ -23,6 +25,16 @@ const platformServices = {
     stats: getLCStats,
     submissions: getLeetcodeSubmissionCalendar,
     rating: getLCRatingHistory,
+  },
+  gfg: {
+    stats: getGfgStats,
+    submissions: getGfgSubmissionCalendar,
+    rating: async () => [],
+  },
+  github: {
+    stats: getGithubStats,
+    submissions: getGithubSubmissionCalendar,
+    rating: async () => [],
   },
 };
 

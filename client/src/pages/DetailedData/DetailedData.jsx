@@ -6,6 +6,8 @@ const platforms = [
   { id: "codeforces", label: "Codeforces" },
   { id: "codechef", label: "CodeChef" },
   { id: "leetcode", label: "LeetCode" },
+  { id: "gfg", label: "GeeksForGeeks" },
+  { id: "github", label: "GitHub" },
 ];
 
 function DetailedData() {

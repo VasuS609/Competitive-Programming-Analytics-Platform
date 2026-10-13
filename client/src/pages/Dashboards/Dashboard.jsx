@@ -7,6 +7,8 @@ const platforms = [
   { id: "codeforces", label: "Codeforces" },
   { id: "codechef", label: "CodeChef" },
   { id: "leetcode", label: "LeetCode" },
+  { id: "gfg", label: "GeeksForGeeks" },
+  { id: "github", label: "GitHub" },
 ];
 
 function ProfileForm({ activePlatform, handles, setActivePlatform, setHandle }) {
@@ -98,4 +100,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-
