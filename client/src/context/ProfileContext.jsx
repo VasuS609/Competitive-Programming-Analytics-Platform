@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ProfileContext } from "./profileContext";
 
 const STORAGE_KEY = "dsa-tracker:profile:v1";
-const PLATFORMS = ["codeforces", "codechef", "leetcode", "gfg", "github"];
+const PLATFORMS = ["codeforces", "codechef", "leetcode", "gfg", "github", "atcoder"];
 const DEFAULT_PROFILE = {
   activePlatform: "codeforces",
   days: 7,
@@ -12,6 +12,7 @@ const DEFAULT_PROFILE = {
     leetcode: "",
     gfg: "",
     github: "",
+    atcoder: "",
   },
 };
 

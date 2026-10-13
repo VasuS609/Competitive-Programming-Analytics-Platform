@@ -9,6 +9,7 @@ const platforms = [
   { id: "leetcode", label: "LeetCode", color: "#f2c94c" },
   { id: "gfg", label: "GeeksForGeeks", color: "#2f8d46" },
   { id: "github", label: "GitHub", color: "#24292f" },
+  { id: "atcoder", label: "AtCoder", color: "#111827" },
 ];
 
 function buildActivity(calendars) {
@@ -32,12 +33,14 @@ function HomeDashboard({ handles }) {
   const leetcodeStats = useStats(handles.leetcode, "leetcode");
   const gfgStats = useStats(handles.gfg, "gfg");
   const githubStats = useStats(handles.github, "github");
+  const atcoderStats = useStats(handles.atcoder, "atcoder");
 
   const codeforcesCalendar = useSubmissionCalendar(handles.codeforces, "codeforces", days);
   const codechefCalendar = useSubmissionCalendar(handles.codechef, "codechef", days);
   const leetcodeCalendar = useSubmissionCalendar(handles.leetcode, "leetcode", days);
   const gfgCalendar = useSubmissionCalendar(handles.gfg, "gfg", days);
   const githubCalendar = useSubmissionCalendar(handles.github, "github", days);
+  const atcoderCalendar = useSubmissionCalendar(handles.atcoder, "atcoder", days);
 
   const stats = [
     { id: "codeforces", ...codeforcesStats },
@@ -45,6 +48,7 @@ function HomeDashboard({ handles }) {
     { id: "leetcode", ...leetcodeStats },
     { id: "gfg", ...gfgStats },
     { id: "github", ...githubStats },
+    { id: "atcoder", ...atcoderStats },
   ];
 
 
@@ -55,6 +59,7 @@ function HomeDashboard({ handles }) {
     { ...leetcodeCalendar, ...platforms[2], handle: handles.leetcode },
     { ...gfgCalendar, ...platforms[3], handle: handles.gfg },
     { ...githubCalendar, ...platforms[4], handle: handles.github },
+    { ...atcoderCalendar, ...platforms[5], handle: handles.atcoder },
   ];
 
   const activity = buildActivity(calendars);
@@ -124,7 +129,7 @@ function HomeDashboard({ handles }) {
 
         <div className="stat-card">
           <span className="stat-label">Platforms loaded</span>
-          <strong className="stat-value">{stats.filter((item) => item.data).length}/5</strong>
+          <strong className="stat-value">{stats.filter((item) => item.data).length}/6</strong>
           <small className="stat-note">Live profile data</small>
         </div>
 

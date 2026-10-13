@@ -8,6 +8,7 @@ const platforms = [
   { id: "leetcode", label: "LeetCode" },
   { id: "gfg", label: "GeeksForGeeks" },
   { id: "github", label: "GitHub" },
+  { id: "atcoder", label: "AtCoder" },
 ];
 
 function DetailedData() {

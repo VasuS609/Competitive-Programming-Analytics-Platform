@@ -6,6 +6,11 @@ const { getCodeforcesSubmissionCalendar } = require('../../services/codeforces/c
 const { getCFStats, fetchRatingHistory } = require('../../services/codeforces/cfService');
 const { getGfgStats, getGfgSubmissionCalendar } = require('../../services/geeksforgeeks/gfgService');
 const { getGithubStats, getGithubSubmissionCalendar } = require('../../services/github/githubService');
+const {
+  getAtcoderStats,
+  getAtcoderRatingHistory,
+  getAtcoderSubmissionCalendar,
+} = require('../../services/atcoder/atcoderService');
 
 const platformServices = {
   codeforces: {
@@ -36,10 +41,15 @@ const platformServices = {
     submissions: getGithubSubmissionCalendar,
     rating: async () => [],
   },
+  atcoder: {
+    stats: getAtcoderStats,
+    submissions: getAtcoderSubmissionCalendar,
+    rating: getAtcoderRatingHistory,
+  },
 };
 
 function getPlatformService(platform, type) {
   return platformServices[platform]?.[type];
 }
 
-module.exports = {getPlatformService};
+module.exports = getPlatformService;
