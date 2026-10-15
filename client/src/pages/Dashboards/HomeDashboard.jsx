@@ -226,6 +226,7 @@ function HomeDashboard({ handles }) {
           <strong className="stat-value">{stats.filter((item) => item.data).length}/6</strong>
           <small className="stat-note">Live profile data</small>
         </div>
+        
 
         <section className="content-panel">
           <div className="panel-heading">
