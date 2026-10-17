@@ -138,4 +138,27 @@ async function getLCRatingHistory(handle) {
     return stats.ratingHistory;
 }
 
-module.exports = { getLCStats, getLCRatingHistory };
+async function getLCAcceptedActivity(handle, days = 7) {
+    const stats = await getLCStats(handle);
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const acceptedByDate = new Map();
+
+    for (const submission of stats.recentSubmissionList || []) {
+        if (
+            submission.statusDisplay !== "Accepted" ||
+            !submission.timestamp ||
+            Number(submission.timestamp) * 1000 < cutoff
+        ) continue;
+
+        const date = new Date(Number(submission.timestamp) * 1000).toISOString().slice(0, 10);
+        if (!acceptedByDate.has(date)) acceptedByDate.set(date, new Set());
+        acceptedByDate.get(date).add(submission.titleSlug || submission.title);
+    }
+
+    return [...acceptedByDate.entries()].map(([date, problems]) => ({
+        date,
+        accepted: problems.size,
+    }));
+}
+
+module.exports = { getLCStats, getLCRatingHistory, getLCAcceptedActivity };

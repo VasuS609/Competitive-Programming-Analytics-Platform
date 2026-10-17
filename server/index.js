@@ -14,6 +14,7 @@ app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 app.use("/api", require("./routes/goals"));     
 app.use("/api", require("./routes/platformRouter"));
+app.use("/api/graphs", require("./routes/graphs"));
 
 app.use((req, res) => res.status(404).json({ error: "Endpoint not found" }));
 app.use((err, req, res, next) => {

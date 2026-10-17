@@ -259,6 +259,31 @@ async function getCFWeakTopics(handle, options) {
     return analyzeWeakTopics(submissions, options);
 }
 
+async function getCFAcceptedActivity(handle, days = 7) {
+    const { submissions } = await getRawData(handle);
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const acceptedByDate = new Map();
+
+    for (const submission of submissions) {
+        if (
+            submission.verdict !== "OK" ||
+            !submission.problem ||
+            !submission.creationTimeSeconds ||
+            submission.creationTimeSeconds * 1000 < cutoff
+        ) continue;
+
+        const date = toDate(submission.creationTimeSeconds * 1000);
+        const problemId = problemKey(submission.problem);
+        if (!acceptedByDate.has(date)) acceptedByDate.set(date, new Set());
+        acceptedByDate.get(date).add(problemId);
+    }
+
+    return [...acceptedByDate.entries()].map(([date, problems]) => ({
+        date,
+        accepted: problems.size,
+    }));
+}
+
 async function fetchRatingHistory(handle) {
     const json = await fetchJson(
         `https://codeforces.com/api/user.rating?handle=${encodeURIComponent(handle)}`
@@ -278,4 +303,5 @@ module.exports = run;
 module.exports.getCFStats = getCFStats;
 module.exports.getCFSolveActivity = getCFSolveActivity;
 module.exports.getCFWeakTopics = getCFWeakTopics;
+module.exports.getCFAcceptedActivity = getCFAcceptedActivity;
 module.exports.fetchRatingHistory = fetchRatingHistory;
