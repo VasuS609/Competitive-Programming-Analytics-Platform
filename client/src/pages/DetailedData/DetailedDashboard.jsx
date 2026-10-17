@@ -7,7 +7,7 @@ import { usePlatformSync } from "../../hooks/usePlatformSync";
 //below, footer, more detiled view
 function DetailedDashboard({ handle, title, platform }) {
     const { data, loading, error } = useStats(handle, platform);
-    const { sync, loading: syncing, error: syncError } = usePlatformSync(platform, handle);
+    const { sync, data: syncData, loading: syncing, error: syncError } = usePlatformSync(platform, handle);
 
     if(loading == true) {
         return <div className="rounded-2xl bg-paper p-5 text-sm text-ink/60 shadow-sm">Loading your dashboard...</div>;
@@ -43,6 +43,7 @@ function DetailedDashboard({ handle, title, platform }) {
                     </button>
             </div>
             {syncError && <p className="text-sm text-red-600">Sync failed: {syncError.message}</p>}
+            {syncData && <p className="text-sm text-ink/60">Synced {syncData.syncedCount} solved problems.</p>}
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 {details.map(
