@@ -43,6 +43,7 @@ async function getAtcoderStats(handle) {
 
 async function getAtcoderRatingHistory(handle) {
   const data = await getAtcoderData(handle);
+
   return data.contests
     .filter((contest) => contest.contestEndTime && Number.isFinite(Number(contest.userNewRating)))
     .map((contest) => ({
@@ -53,8 +54,10 @@ async function getAtcoderRatingHistory(handle) {
 }
 
 async function getAtcoderSubmissionCalendar(handle, days = 7) {
+
   const data = await getAtcoderData(handle);
   const dates = getLastNDates(30);
+  
   const counts = Object.fromEntries(dates.map((date) => [date, 0]));
   let firstActivityDate = null;
 

@@ -31,15 +31,3 @@ function prepare(sql) {
 }
 
 module.exports = { prepare };
-
-
-
-/*
-took AI HELP TO DIGNOSE AND FIX 
-Diagnosed the crash in problemService.js.
-Found better-sqlite3 was causing a Windows native crash.
-Replaced it in index.js with the available SQLite CLI adapter.
-Verified the service now inserts and retrieves problems successfully.
-Noted that running the script repeatedly creates duplicate Two Sum records.
-No changes were made to the frontend or API routes.
-*/
