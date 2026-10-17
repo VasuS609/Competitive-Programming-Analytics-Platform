@@ -1,4 +1,5 @@
 const API_BASE = "https://gfg-stats.tashif.codes";
+const { getSolvedProblems } = require("../solvedProblemService");
 const cache = {};
 const CACHE_TTL = 10 * 60 * 1000;
 
@@ -36,7 +37,7 @@ async function getGfgStats(handle) {
   };
 
   cache[key] = { data, expiresAt: Date.now() + CACHE_TTL };
-  return data;
+  return { ...data, problems: getSolvedProblems("gfg", handle) };
 }
 
 async function getGfgSubmissionCalendar(handle, days = 7) {

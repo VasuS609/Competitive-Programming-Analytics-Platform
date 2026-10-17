@@ -3,6 +3,7 @@ const {
   fetchUserContestList,
 } = require("@qatadaazzeh/atcoder-api");
 const { buildCalendar, getLastNDates, toUTCDateString } = require("../../utils/dates");
+const { getSolvedProblems } = require("../solvedProblemService");
 
 const cache = {};
 const CACHE_TTL = 10 * 60 * 1000;
@@ -38,7 +39,7 @@ async function getAtcoderData(handle) {
 
 async function getAtcoderStats(handle) {
   const data = await getAtcoderData(handle);
-  return data;
+  return { ...data, problems: getSolvedProblems("atcoder", handle) };
 }
 
 async function getAtcoderRatingHistory(handle) {

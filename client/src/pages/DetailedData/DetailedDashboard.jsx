@@ -2,6 +2,7 @@ import ProblemTable from "./components/ProblemTable";
 import useStats from "../../hooks/useStats";
 import SubmissionCalendar from "./components/SubmissionCalendar";
 import RatingChart from "./components/RatingChart";
+import { usePlatformSync } from "../../hooks/usePlatformSync";
 
 //below, footer, more detiled view
 function DetailedDashboard({ handle, title, platform }) {
@@ -20,6 +21,7 @@ function DetailedDashboard({ handle, title, platform }) {
     }
 
     const displayName = data.username || data.name || data.handle || handle;
+    const { sync, loading: syncing, error: syncError } = usePlatformSync(platform, handle);
 
     const details = [
         ["Solved", data.problemSolved ?? data.totalSolved ?? 0],
@@ -36,7 +38,11 @@ function DetailedDashboard({ handle, title, platform }) {
                 <div className="detail-heading">
                     <h2>{displayName}</h2>
                     <span className="platform-badge">{platform}</span>
+                    <button type="button" onClick={sync} disabled={syncing} className="tab-button">
+                        {syncing ? "Syncing..." : "Sync solved problems"}
+                    </button>
             </div>
+            {syncError && <p className="text-sm text-red-600">Sync failed: {syncError.message}</p>}
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 {details.map(

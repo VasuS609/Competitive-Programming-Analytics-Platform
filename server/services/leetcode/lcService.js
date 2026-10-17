@@ -96,7 +96,7 @@ async function getCompleteUserData(handle) {
     const totalSolved = find("All") || easySolved + mediumSolved + hardSolved;
 
     const recentProblems = await fetchRecentAccepted(handle, recentSubmissionList);
-    syncSolvedProblems("leetcode", handle, recentProblems);
+    await syncSolvedProblems("leetcode", handle, recentProblems);
 
     return {
         handle,

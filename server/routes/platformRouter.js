@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const getPlatformService = require("../services/platformServices");
 const { parseSubmissionDays, normalizeStats } = require("../utils/helpers");
+const { syncPlatform } = require("../services/platformSyncService");
 
 function platformName(req) {
   return req.params.platform.toLowerCase();
@@ -52,6 +53,17 @@ router.get("/:platform/activity/:handle", async (req, res, next) => {
     return res.json(await service(req.params.handle, parseSubmissionDays(req.query.days)));
   } catch (error) {
     return next({ status: error.status || 502, message: error.message || "Failed to fetch activity" });
+  }
+});
+
+router.post("/:platform/sync/:handle", async (req, res, next) => {
+  try {
+    return res.json(await syncPlatform(req.params.handle, req.params.platform));
+  } catch (error) {
+    return next({
+      status: error.status || 502,
+      message: error.message || "Failed to sync platform data",
+    });
   }
 });
 

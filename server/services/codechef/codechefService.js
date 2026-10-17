@@ -1,4 +1,5 @@
 const { JSDOM } = require("jsdom");
+const { getSolvedProblems } = require("../solvedProblemService");
 
 const cache = {};
 
@@ -45,6 +46,7 @@ async function fetchCodeChefData(handle) {
     stars: document.querySelector(".rating")?.textContent?.trim() || "unrated",
     heatMap,
     ratingData,
+    problems: [],
   };
 }
 
@@ -54,7 +56,7 @@ async function getCodeChefStats(handle) {
 
     if (cached && Date.now() < cached.expiresAt) {
         console.log('CodeChef Cache Hit: for', handle);
-        return cached.data;
+        return { ...cached.data, problems: getSolvedProblems("codechef", handle) };
     }
     else
     {
@@ -64,7 +66,7 @@ async function getCodeChefStats(handle) {
             data,
             expiresAt: Date.now() + 10 * 60 * 1000
         };
-        return data;
+        return { ...data, problems: getSolvedProblems("codechef", handle) };
     }
 }
 
