@@ -7,6 +7,7 @@ import { usePlatformSync } from "../../hooks/usePlatformSync";
 //below, footer, more detiled view
 function DetailedDashboard({ handle, title, platform }) {
     const { data, loading, error } = useStats(handle, platform);
+    const { sync, loading: syncing, error: syncError } = usePlatformSync(platform, handle);
 
     if(loading == true) {
         return <div className="rounded-2xl bg-paper p-5 text-sm text-ink/60 shadow-sm">Loading your dashboard...</div>;
@@ -21,7 +22,6 @@ function DetailedDashboard({ handle, title, platform }) {
     }
 
     const displayName = data.username || data.name || data.handle || handle;
-    const { sync, loading: syncing, error: syncError } = usePlatformSync(platform, handle);
 
     const details = [
         ["Solved", data.problemSolved ?? data.totalSolved ?? 0],

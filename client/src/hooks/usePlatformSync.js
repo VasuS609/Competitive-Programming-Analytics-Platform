@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { request } from "../api";
+import { syncPlatform as requestPlatformSync } from "../api";
 
 export function usePlatformSync(platform, handle) {
   const [state, setState] = useState({ data: null, error: null, loading: false });
@@ -10,15 +10,12 @@ export function usePlatformSync(platform, handle) {
 
     setState({ data: null, error: null, loading: true });
     try {
-      const data = await request(
-        `/${platform}/sync/${encodeURIComponent(normalizedHandle)}`,
-        { method: "POST" },
-      );
+      const data = await requestPlatformSync(platform, normalizedHandle);
       setState({ data, error: null, loading: false });
       return data;
     } catch (error) {
       setState({ data: null, error, loading: false });
-      throw error;
+      return null;
     }
   }
 

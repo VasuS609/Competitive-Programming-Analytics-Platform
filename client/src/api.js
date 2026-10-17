@@ -8,3 +8,7 @@ export async function request(path, options) {
   
   return body;
 }
+
+export function syncPlatform(platform, handle) {
+  return request(`/${platform}/sync/${encodeURIComponent(handle)}`, { method: "POST" });
+}
