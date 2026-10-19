@@ -3,7 +3,8 @@ const { getLeetcodeSubmissionCalendar } = require("./leetcode/lcSubmissionsCalen
 const { getCodeChefStats } = require("./codechef/codechefService");
 const { getCodechefSubmissionCalendar } = require("./codechef/ccSubmissionsCalendar");
 const { getCodeforcesSubmissionCalendar } = require("./codeforces/cfSubmissionsCalendar");
-const { getCFStats, fetchRatingHistory } = require("./codeforces/cfService");
+const { getCFStats } = require("./codeforces/cfService");
+const { fetchRatingHistory: getCodeforcesRatingHistory } = require("./codeforces/cfRating");
 const { getCodeforcesActivity, getCodeChefActivity, getLeetcodeActivity } = require("./activityService");
 const { getGfgStats, getGfgSubmissionCalendar } = require("./geeksforgeeks/gfgService");
 const { getAtcoderStats, getAtcoderRatingHistory, getAtcoderSubmissionCalendar } = require("./atcoder/atcoderService");
@@ -12,7 +13,7 @@ const platformServices = {
   codeforces: {
     stats: getCFStats,
     submissions: getCodeforcesSubmissionCalendar,
-    rating: fetchRatingHistory,
+    rating: getCodeforcesRatingHistory,
     activity: getCodeforcesActivity,
   },
   codechef: {

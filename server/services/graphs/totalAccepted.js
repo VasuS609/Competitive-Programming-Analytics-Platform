@@ -1,9 +1,24 @@
 const { getLastNDates } = require("../../utils/dates");
-const { getCFAcceptedActivity } = require("../codeforces/cfService");
+const { getCFAcceptedActivity } = require("../codeforces/cfTotalAccepted");
+const { getCFNotAcceptedActivity } = require("../codeforces/cfNotAccepted");
 const { getLCAcceptedActivity } = require("../leetcode/lcService");
 
 const acceptedActivityServices = {
-  codeforces: getCFAcceptedActivity,
+  codeforces: async (handle, days) => {
+    const [accepted, nonAccepted] = await Promise.all([
+      getCFAcceptedActivity(handle, days),
+      getCFNotAcceptedActivity(handle, days),
+    ]);
+    const byDate = {};
+    for (const row of [...accepted, ...nonAccepted]) {
+      const entry = byDate[row.date] || { submissions: 0, accepted: 0, nonAccepted: 0 };
+      entry.submissions += row.submissions || 0;
+      entry.accepted += row.accepted || 0;
+      entry.nonAccepted += row.nonAccepted || 0;
+      byDate[row.date] = entry;
+    }
+    return Object.entries(byDate).map(([date, row]) => ({ date, ...row }));
+  },
   leetcode: getLCAcceptedActivity,
 };
 
