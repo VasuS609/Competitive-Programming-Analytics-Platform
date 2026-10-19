@@ -1,7 +1,15 @@
 const { getLastNDates } = require("../../utils/dates");
 const { getCFAcceptedActivity } = require("../codeforces/cfTotalAccepted");
 const { getCFNotAcceptedActivity } = require("../codeforces/cfNotAccepted");
+const { getCodeChefAcceptedActivity } = require("../codechef/ccTotalAccepted");
+const { getCodeChefNotAcceptedActivity } = require("../codechef/ccNotAccepted");
+const { getAtcoderAcceptedActivity } = require("../atcoder/atTotalAccepted");
+const { getAtcoderNotAcceptedActivity } = require("../atcoder/atNotAccepted");
+const { getGfgAcceptedActivity } = require("../geeksforgeeks/gfgTotalAccepted");
+const { getGfgNotAcceptedActivity } = require("../geeksforgeeks/gfgNotAccepted");
 const { getLCAcceptedActivity } = require("../leetcode/lcService");
+const { getLCAcceptedActivity: getLCAcceptedSubmissionsActivity } = require("../leetcode/lcTotalAccepted");
+const { getLCNotAcceptedActivity } = require("../leetcode/lcNotAccepted");
 
 const acceptedActivityServices = {
   codeforces: async (handle, days) => {
@@ -19,8 +27,47 @@ const acceptedActivityServices = {
     }
     return Object.entries(byDate).map(([date, row]) => ({ date, ...row }));
   },
-  leetcode: getLCAcceptedActivity,
+  codechef: (handle, days) => mergeActivities(
+    getCodeChefAcceptedActivity(handle, days),
+    getCodeChefNotAcceptedActivity(handle, days),
+  ),
+  atcoder: (handle, days) => mergeActivities(
+    getAtcoderAcceptedActivity(handle, days),
+    getAtcoderNotAcceptedActivity(handle, days),
+  ),
+  gfg: (handle, days) => mergeActivities(
+    getGfgAcceptedActivity(handle, days),
+    getGfgNotAcceptedActivity(handle, days),
+  ),
+  leetcode: async (handle, days) => {
+    const [accepted, nonAccepted] = await Promise.all([
+      getLCAcceptedSubmissionsActivity(handle, days),
+      getLCNotAcceptedActivity(handle, days),
+    ]);
+    const byDate = {};
+    for (const row of [...accepted, ...nonAccepted]) {
+      const entry = byDate[row.date] || { submissions: 0, accepted: 0, nonAccepted: 0 };
+      entry.submissions += row.submissions || 0;
+      entry.accepted += row.accepted || 0;
+      entry.nonAccepted += row.nonAccepted || 0;
+      byDate[row.date] = entry;
+    }
+    return Object.entries(byDate).map(([date, row]) => ({ date, ...row }));
+  },
 };
+
+async function mergeActivities(acceptedPromise, nonAcceptedPromise) {
+  const [accepted, nonAccepted] = await Promise.all([acceptedPromise, nonAcceptedPromise]);
+  const byDate = {};
+  for (const row of [...accepted, ...nonAccepted]) {
+    const entry = byDate[row.date] || { submissions: 0, accepted: 0, nonAccepted: 0 };
+    entry.submissions += Number(row.submissions) || 0;
+    entry.accepted += Number(row.accepted) || 0;
+    entry.nonAccepted += Number(row.nonAccepted) || 0;
+    byDate[row.date] = entry;
+  }
+  return Object.entries(byDate).map(([date, row]) => ({ date, ...row }));
+}
 
 function normalizeProfiles(profiles) {
   if (!profiles || typeof profiles !== "object") return [];

@@ -114,6 +114,7 @@ async function getCompleteUserData(handle) {
         submissionCalendar: matchedUser.submissionCalendar || "{}",
         problems: getSolvedProblems("leetcode", handle),
         recentSubmissions: recentSubmissionList || [],
+        recentSubmissionList: recentSubmissionList || [],
         fetchedAt: new Date().toISOString(),
     };
 }

@@ -74,6 +74,7 @@ async function getAtcoderSubmissionCalendar(handle, days = 7) {
 }
 
 module.exports = {
+  getAtcoderData,
   getAtcoderStats,
   getAtcoderRatingHistory,
   getAtcoderSubmissionCalendar,
