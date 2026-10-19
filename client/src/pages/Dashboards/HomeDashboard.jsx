@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, Radar, RadarChart, PolarAngleAxis, PolarGrid, PolarRadiusAxis, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import useStats from "../../hooks/useStats";
 import { useSubmissionCalendar} from "../../hooks/useSubmissionCalendar";
+import { useTotalAccepted } from "../../hooks/useTotalAccepted";
 import { useProfile } from "../../context/useProfile";
 
 const platforms = [
@@ -36,7 +37,8 @@ function getAcceptedCount(statsItem) {
 }
 
 function HomeDashboard({ handles }) {
-  const { days, setDays } = useProfile();
+  const { days } = useProfile();
+  const totalAccepted = useTotalAccepted(handles);
   const heatMapRef = useRef(null);
   const [hoveredDate, setHoveredDate] = useState(null);
 
@@ -173,42 +175,31 @@ function HomeDashboard({ handles }) {
         <section className="content-panel">
          
           <div className="panel-heading">
-            <h3>Accepted problems per day</h3>
-            <div className="range-toggle" aria-label="Accepted problem range">
-              {[7, 30].map((range) => (
-                <button
-                  key={range}
-                  type="button"
-                  className={days === range ? "active" : ""}
-                  onClick={() => setDays(range)}
-                >
-                  {range}
-                </button>
-              ))}
-            </div>
+            <h3>Submissions per day</h3>
+            <span>Last 7 days</span>
           </div>
 
 
-          {activity.length ? (
+          {totalAccepted.loading ? (
+            <p className="muted">Loading submissions...</p>
+          ) : totalAccepted.error ? (
+            <p className="muted">Submissions unavailable: {totalAccepted.error.message}</p>
+          ) : totalAccepted.data?.daily?.length ? (
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={activity}>
+              <BarChart data={totalAccepted.data.daily}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e0" />
                 <XAxis dataKey="date" stroke="#1f1f1f" fontSize={12} />
                 <YAxis allowDecimals={false} stroke="#1f1f1f" fontSize={12} />
                 <Tooltip />
                 <Legend />
-                {calendars.filter(({ handle, error, loading }) => handle && !error && !loading).map(({ id, label, color }) => (
-                  <Bar key={id} dataKey={id} name={label} stackId="submissions" fill={color} radius={[4, 4, 0, 0]} />
-                ))}
+                <Bar dataKey="submissions" name="Total submissions" fill="#2f80ed" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="accepted" name="Accepted" fill="#899e20" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="nonAccepted" name="Non-accepted" fill="#e4572e" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="muted">No submission activity is available for the selected profiles.</p>
+            <p className="muted">No submission data is available for the selected profiles.</p>
           )}
-
-          {calendars.filter(({ handle, error }) => handle && error).map(({ id, label, error }) => (
-            <p className="muted" key={id}>{label} submissions unavailable: {error.message}</p>
-          ))}
 
         </section>
 

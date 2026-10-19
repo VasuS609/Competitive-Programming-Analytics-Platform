@@ -1,16 +1,8 @@
 const { getSolvedProblems, syncSolvedProblems } = require("../solvedProblemService");
 
 const CACHE_TTL = 10 * 60 * 1000;
-const WEAK_TOPIC_WINDOW = 150; // look at  N submissions
 const DEFAULT_TZ_OFFSET_MIN = 330; // IST. 
 
-// Verdicts that say nothing about topic weakness
-const IGNORED_VERDICTS = new Set([
-    "COMPILATION_ERROR",
-    "SKIPPED",
-    "TESTING",
-    "CHALLENGED",
-]);
 
 const rawCache = {};  
 const statsCache = {}; 
@@ -38,6 +30,18 @@ const problemUrl = (p) =>
         ? `https://codeforces.com/gym/${p.contestId}/problem/${p.index}`
         : `https://codeforces.com/contest/${p.contestId}/problem/${p.index}`;
 
+function getFirstSolves(submissions) {
+    const first = new Map();
+    for (const submission of submissions) {
+        if (submission.verdict !== "OK" || !submission.problem) continue;
+        const key = problemKey(submission.problem);
+        const previous = first.get(key);
+        if (!previous || submission.creationTimeSeconds < previous.creationTimeSeconds) {
+            first.set(key, submission);
+        }
+    }
+    return first;
+}
 
 
 // "YYYY-MM-DD" 
@@ -53,11 +57,51 @@ function addDays(dateStr, n) {
 }
 
 
-
 function dateRange(from, to) {
     const out = [];
     for (let d = from; d <= to; d = addDays(d, 1)) out.push(d);
     return out;
+}
+
+function analyzeWeakTopics(submissions, { window = 150, ignoreEventuallySolved = false } = {}) {
+    const solved = new Set(
+        submissions.filter((s) => s.verdict === "OK" && s.problem).map((s) => problemKey(s.problem)),
+    );
+    const recent = submissions
+        .filter((s) => s.problem && s.creationTimeSeconds)
+        .sort((a, b) => b.creationTimeSeconds - a.creationTimeSeconds)
+        .slice(0, window);
+    const topics = {};
+    const failures = [];
+    for (const submission of recent) {
+        const accepted = submission.verdict === "OK";
+        const eventuallySolved = solved.has(problemKey(submission.problem));
+        const failed = !accepted && !(ignoreEventuallySolved && eventuallySolved);
+        if (failed) failures.push({
+            name: submission.problem.name,
+            verdict: submission.verdict,
+            tags: submission.problem.tags || [],
+            rating: submission.problem.rating,
+            eventuallySolved,
+            url: problemUrl(submission.problem),
+            date: toDate(submission.creationTimeSeconds * 1000),
+        });
+        for (const tag of submission.problem.tags || []) {
+            const stats = topics[tag] || (topics[tag] = { tag, attempts: 0, failed: 0, accepted: 0 });
+            stats.attempts += 1;
+            if (accepted) stats.accepted += 1;
+            else if (failed) stats.failed += 1;
+        }
+    }
+    return {
+        windowSize: recent.length,
+        failedSubmissions: failures.length,
+        weakTopics: Object.values(topics)
+            .filter((topic) => topic.failed)
+            .map((topic) => ({ ...topic, failRate: Math.round(topic.failed / topic.attempts * 100) }))
+            .sort((a, b) => b.failed - a.failed || b.failRate - a.failRate),
+        recentFailures: failures,
+    };
 }
 
 // raw data 
@@ -76,133 +120,6 @@ async function getRawData(handle) {
     const data = { submissions: status.result, profile: info.result[0] };
     rawCache[handle] = { data, expiresAt: Date.now() + CACHE_TTL };
     return data;
-}
-
-/* AC: solved over time */
-
-// Map of problemKey -> earliest accepted submission (the day it was first solved)
-function getFirstSolves(submissions) {
-    const first = new Map();
-
-    for (const s of submissions) {
-        if (s.verdict !== "OK" || !s.problem) continue;
-
-        const key = problemKey(s.problem);
-        const existing = first.get(key);
-
-        if (!existing || s.creationTimeSeconds
-             < existing.creationTimeSeconds) {
-
-            first.set(key, s);
-        }
-    }
-    return first;
-}
-
-function buildSolveActivity(firstSolves, tzOffsetMin = DEFAULT_TZ_OFFSET_MIN) {
-   
-    const perDay = {};
-
-    for (const s of firstSolves.values()) {
-        const d = toDate(s.creationTimeSeconds * 1000, tzOffsetMin);
-        perDay[d] = (perDay[d] || 0) + 1;
-    }
-
-    const emptySummary = { today: 0, yesterday: 0, last7Days: 0, last30Days: 0, total: 0 };
-
-    const dates = Object.keys(perDay).sort();
-
-    if (!dates.length) {
-        return { summary: emptySummary, daily: [], monthly: [], cumulative: [] };
-    }
-
-    const today = toDate(Date.now(), tzOffsetMin);
-  
-    const daily = dateRange(dates[0], today).map((date) => ({
-        date,
-        solved: perDay[date] || 0,
-    }));
-
-    let running = 0;
-    const cumulative = daily.map(({ date, solved }) => ({ date, total: (running += solved) }));
-
-    const monthlyMap = {};
-    for (const { date, solved } of daily) {
-        const month = date.slice(0, 7);
-        monthlyMap[month] = (monthlyMap[month] || 0) + solved;
-    }
-    const monthly = Object.entries(monthlyMap).map(([month, solved]) => ({ month, solved }));
-
-    const sumLast = (n) => daily.slice(-n).reduce((a, d) => a + d.solved, 0);
-
-    return {
-        summary: {
-            today: daily[daily.length - 1].solved,
-            yesterday: daily.length > 1 ? daily[daily.length - 2].solved : 0,
-            last7Days: sumLast(7),
-            last30Days: sumLast(30),
-            total: running,
-        },
-        daily,      // [{ date, solved }]            -> daily bar/line chart
-        monthly,    // [{ month, solved }]           -> monthly chart
-        cumulative, // [{ date, total }]             -> "since the beginning" chart
-    };
-}
-
-/* --------------------- non-AC: weak topic analysis --------------------- */
-
-function analyzeWeakTopics(
-    submissions,
-    { window = WEAK_TOPIC_WINDOW, ignoreEventuallySolved = false } = {}
-) {
-    const solvedKeys = new Set(
-        submissions.filter((s) => s.verdict === "OK" && s.problem).map((s) => problemKey(s.problem))
-    );
-
-    const recent = submissions
-        .filter((s) => s.problem && !IGNORED_VERDICTS.has(s.verdict))
-        .sort((a, b) => b.creationTimeSeconds - a.creationTimeSeconds)
-        .slice(0, window);
-
-    const tagStats = {};
-    const recentFailures = [];
-
-    for (const s of recent) {
-        const isOk = s.verdict === "OK";
-        const eventuallySolved = solvedKeys.has(problemKey(s.problem));
-        const countsAsFailure = !isOk && !(ignoreEventuallySolved && eventuallySolved);
-
-        if (countsAsFailure) {
-            recentFailures.push({
-                name: s.problem.name,
-                verdict: s.verdict,
-                tags: s.problem.tags,
-                rating: s.problem.rating,
-                eventuallySolved,
-                url: problemUrl(s.problem),
-                date: toDate(s.creationTimeSeconds * 1000),
-            });
-        }
-
-        for (const tag of s.problem.tags || []) {
-            const t = (tagStats[tag] ||= { tag, attempts: 0, failed: 0, accepted: 0 });
-            t.attempts++;
-            if (isOk) t.accepted++;
-            else if (countsAsFailure) t.failed++;
-        }
-    }
-
-    const weakTopics = Object.values(tagStats)
-        .filter((t) => t.failed > 0)
-        .map((t) => ({ ...t, failRate: Math.round((t.failed / t.attempts) * 100) }))
-        .sort((a, b) => b.failed - a.failed || b.failRate - a.failRate);
-
-    return {
-        windowSize: recent.length,
-        failedSubmissions: recentFailures.length,
-        weakTopics,     // [{ tag, attempts, failed, accepted, failRate }]
-        recentFailures, // the actual non-AC submissions behind the numbers
-    };
 }
 
 /* ------------------------------- main ------------------------------- */
@@ -254,34 +171,37 @@ async function getCFSolveActivity(handle, tzOffsetMin = DEFAULT_TZ_OFFSET_MIN) {
     return buildSolveActivity(getFirstSolves(submissions), tzOffsetMin);
 }
 
-async function getCFWeakTopics(handle, options) {
-    const { submissions } = await getRawData(handle);
-    return analyzeWeakTopics(submissions, options);
-}
 
 async function getCFAcceptedActivity(handle, days = 7) {
     const { submissions } = await getRawData(handle);
     const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-    const acceptedByDate = new Map();
+    const activityByDate = new Map();
 
     for (const submission of submissions) {
-        if (
-            submission.verdict !== "OK" ||
-            !submission.problem ||
-            !submission.creationTimeSeconds ||
-            submission.creationTimeSeconds * 1000 < cutoff
-        ) continue;
-
+        if (!submission.problem || !submission.creationTimeSeconds ||
+            submission.creationTimeSeconds * 1000 < cutoff) continue;
         const date = toDate(submission.creationTimeSeconds * 1000);
-        const problemId = problemKey(submission.problem);
-        if (!acceptedByDate.has(date)) acceptedByDate.set(date, new Set());
-        acceptedByDate.get(date).add(problemId);
+        const entry = activityByDate.get(date) || { submissions: 0, accepted: 0, acceptedProblems: new Set() };
+        entry.submissions += 1;
+        if (submission.verdict === "OK") {
+            entry.accepted += 1;
+            entry.acceptedProblems.add(problemKey(submission.problem));
+        }
+        activityByDate.set(date, entry);
     }
 
-    return [...acceptedByDate.entries()].map(([date, problems]) => ({
+    return [...activityByDate.entries()].map(([date, entry]) => ({
         date,
-        accepted: problems.size,
+        submissions: entry.submissions,
+        accepted: entry.accepted,
+        nonAccepted: entry.submissions - entry.accepted,
+        acceptedProblems: entry.acceptedProblems.size,
     }));
+}
+
+async function getCFWeakTopics(handle, options) {
+    const { submissions } = await getRawData(handle);
+    return analyzeWeakTopics(submissions, options);
 }
 
 async function fetchRatingHistory(handle) {

@@ -2,12 +2,11 @@ import { useEffect, useState } from "react";
 import { request } from "../api";
 
 export function useTotalAccepted(handles) {
-  const [state, setState] = useState({ data: null, error: null, loading: true });
+  const [state, setState] = useState({ data: null, error: null, key: "" });
   const profileKey = JSON.stringify(handles || {});
 
   useEffect(() => {
     const controller = new AbortController();
-    setState({ data: null, error: null, loading: true });
 
     request("/graphs/total-accepted", {
       method: "POST",
@@ -15,15 +14,19 @@ export function useTotalAccepted(handles) {
       body: JSON.stringify({ profiles: handles }),
       signal: controller.signal,
     })
-      .then((data) => setState({ data, error: null, loading: false }))
+      .then((data) => setState({ data, error: null, key: profileKey }))
       .catch((error) => {
         if (error.name !== "AbortError") {
-          setState({ data: null, error, loading: false });
+          setState({ data: null, error, key: profileKey });
         }
       });
 
     return () => controller.abort();
   }, [profileKey, handles]);
 
-  return state;
+  return {
+    data: state.key === profileKey ? state.data : null,
+    error: state.key === profileKey ? state.error : null,
+    loading: state.key !== profileKey,
+  };
 }
