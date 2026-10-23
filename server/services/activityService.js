@@ -4,13 +4,13 @@ const { getLCStats } = require("./leetcode/lcService");
 
 function createActivity(days, daily, acceptedAvailable = false) {
   const dates = getLastNDates(days);
-  const acceptedProblemIds = Object.values(daily).flatMap((entry) => entry.acceptedProblemIds || []);
   const rows = dates.map((date) => ({
     date,
     submissions: daily[date]?.submissions || 0,
     acceptedSubmissions: acceptedAvailable ? daily[date]?.acceptedSubmissions || 0 : null,
     acceptedProblems: acceptedAvailable ? new Set(daily[date]?.acceptedProblemIds || []).size : null,
   }));
+  const acceptedProblemIds = rows.flatMap((row) => daily[row.date]?.acceptedProblemIds || []);
 
   return {
     range: { days, from: dates[0], to: dates[dates.length - 1] },

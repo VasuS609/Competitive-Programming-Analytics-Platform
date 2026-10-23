@@ -18,13 +18,6 @@ CREATE TABLE IF NOT EXISTS problem(
     created_at TEXT DEFAULT CURRENT_TIMESTAMP -- created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS goals(
-    id INTEGER PRIMARY KEY,
-    rating INTEGER,
-    count_required INTEGER,
-    active BOOLEAN
-);
-
 CREATE TABLE IF NOT EXISTS solved_problems(
     platform TEXT NOT NULL,
     handle TEXT NOT NULL,

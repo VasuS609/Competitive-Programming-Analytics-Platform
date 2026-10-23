@@ -125,7 +125,9 @@ function HomeDashboard({ handles }) {
 
   const totalSolved = stats.reduce(
     (total, item) => total
-    + (item.data?.problemSolved ?? item.data?.totalSolved ?? 0), 0);
+      + (item.data?.platform === "github"
+        ? 0
+        : Number(item.data?.problemSolved ?? item.data?.totalSolved ?? 0)), 0);
   const radarValues = [
     {
       subject: "CP",
@@ -135,7 +137,7 @@ function HomeDashboard({ handles }) {
       subject: "DSA",
       value: Math.round((getAcceptedCount(leetcodeStats) + getAcceptedCount(gfgStats)) / 2),
     },
-    { subject: "Dev", value: getAcceptedCount(githubStats) },
+    { subject: "Dev", value: Number(githubStats.data?.totalCommits) || 0 },
   ];
   const hoveredEntries = activityByDate[hoveredDate] || [];
 
@@ -214,7 +216,7 @@ function HomeDashboard({ handles }) {
 
         <div className="stat-card">
           <span className="stat-label">Platforms loaded</span>
-          <strong className="stat-value">{stats.filter((item) => item.data).length}/6</strong>
+          <strong className="stat-value">{stats.filter((item) => item.data).length}/{Object.values(handles).filter(Boolean).length}</strong>
           <small className="stat-note">Live profile data</small>
         </div>
         

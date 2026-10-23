@@ -35,7 +35,11 @@ function ProblemTable({ platform, problems, totalSolved, heading = "Solved probl
                 return (
                     <div className="problem-row" key={`${platform}-${problem.id}-${problem.index || index}`}>
                         {problemName}
-                        <small>{problem.rating || "Unrated"}</small>
+                        <small>
+                            {platform === "github"
+                                ? `${problem.language || "Unknown"} · ${problem.stars || 0} stars`
+                                : `${problem.difficulty || problem.level || problem.rating || "Unrated"}${problem.tags?.length ? ` · ${problem.tags.join(", ")}` : ""}`}
+                        </small>
                     </div>
                 );
             })}

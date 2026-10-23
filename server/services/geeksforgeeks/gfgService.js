@@ -1,5 +1,6 @@
 const API_BASE = "https://gfg-stats.tashif.codes";
 const { getSolvedProblems } = require("../solvedProblemService");
+const { parseCount } = require("../../utils/helpers");
 const cache = {};
 const CACHE_TTL = 10 * 60 * 1000;
 
@@ -30,8 +31,8 @@ async function getGfgStats(handle) {
     ...profile,
     ...stats,
     username: profile.username || handle,
-    problemSolved: Number(stats.totalSolved) || 0,
-    totalSolved: Number(stats.totalSolved) || 0,
+    problemSolved: parseCount(stats.totalSolved ?? stats.problemSolved ?? stats.solved),
+    totalSolved: parseCount(stats.totalSolved ?? stats.problemSolved ?? stats.solved),
     byDifficulty: stats.byDifficulty || {},
     problems: [],
   };

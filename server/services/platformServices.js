@@ -11,6 +11,7 @@ const { getGfgStats, getGfgSubmissionCalendar } = require("./geeksforgeeks/gfgSe
 const { getAtcoderStats, getAtcoderRatingHistory, getAtcoderSubmissionCalendar } = require("./atcoder/atcoderService");
 const { getAtcoderRatingHistory: getSeparatedAtcoderRatingHistory } = require("./atcoder/atRating");
 const { getLCRatingHistory: getSeparatedLCRatingHistory } = require("./leetcode/lcRating");
+const { getGithubStats, getGithubSubmissionCalendar } = require("./github/githubService");
 
 const platformServices = {
   codeforces: {
@@ -40,6 +41,12 @@ const platformServices = {
     stats: getAtcoderStats,
     submissions: getAtcoderSubmissionCalendar,
     rating: getSeparatedAtcoderRatingHistory,
+  },
+  github: {
+    stats: getGithubStats,
+    submissions: getGithubSubmissionCalendar,
+    activity: getGithubSubmissionCalendar,
+    rating: async () => [],
   },
 };
 

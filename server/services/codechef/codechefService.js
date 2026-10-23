@@ -1,5 +1,6 @@
 const { JSDOM } = require("jsdom");
 const { getSolvedProblems } = require("../solvedProblemService");
+const { parseCount } = require("../../utils/helpers");
 
 const cache = {};
 
@@ -37,12 +38,12 @@ async function fetchCodeChefData(handle) {
     status: response.status,
     name: profile?.children[0]?.children[1]?.textContent?.trim(),
     currentRating: parseInt(rating?.textContent, 10) || 0,
-    problemSolved: parseInt(rating?.parentNode?.children[2]?.textContent?.split("Problems Solved")[1], 10) || 0,
-    highestRating: parseInt(rating?.parentNode?.children[4]?.textContent?.split("Rating")[1], 10) || 0,
+    problemSolved: parseCount(rating?.parentNode?.children[2]?.textContent?.split("Problems Solved")[1]),
+    highestRating: parseCount(rating?.parentNode?.children[4]?.textContent?.split("Rating")[1]),
     countryFlag: countryFlag?.src,
     countryName: countryName?.textContent?.trim(),
-    globalRank: parseInt(ranks?.[0]?.children[0]?.children[0]?.innerHTML, 10) || 0,
-    countryRank: parseInt(ranks?.[1]?.children[0]?.children[0]?.innerHTML, 10) || 0,
+    globalRank: parseCount(ranks?.[0]?.children[0]?.children[0]?.innerHTML),
+    countryRank: parseCount(ranks?.[1]?.children[0]?.children[0]?.innerHTML),
     stars: document.querySelector(".rating")?.textContent?.trim() || "unrated",
     heatMap,
     ratingData,

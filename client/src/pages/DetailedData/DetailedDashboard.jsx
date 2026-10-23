@@ -25,14 +25,21 @@ function DetailedDashboard({ handle, title, platform }) {
 
     const displayName = data.username || data.name || data.handle || handle;
 
-    const details = [
-        ["Solved", data.problemSolved ?? data.totalSolved ?? 0],
-        ["Rating", data.rating ?? data.currentRating ?? "Unavailable"],
-        ["Rank", data.rank ?? data.globalRank ?? "Unavailable"],
-        ["Easy", data.easySolved ?? "Unavailable"],
-        ["Medium", data.mediumSolved ?? "Unavailable"],
-        ["Hard", data.hardSolved ?? "Unavailable"],
-    ];
+    const details = platform === "github"
+        ? [
+            ["Commits (30d)", data.totalCommits ?? 0],
+            ["Repositories", data.publicRepos ?? data.repositories?.length ?? 0],
+            ["Followers", data.followers ?? 0],
+            ["Following", data.following ?? 0],
+        ]
+        : [
+            ["Solved", data.problemSolved ?? data.totalSolved ?? 0],
+            ["Rating", data.rating ?? data.currentRating ?? "Unavailable"],
+            ["Rank", data.rank ?? data.globalRank ?? "Unavailable"],
+            ["Easy", data.easySolved ?? "Unavailable"],
+            ["Medium", data.mediumSolved ?? "Unavailable"],
+            ["Hard", data.hardSolved ?? "Unavailable"],
+        ];
 
     return (
         <section className="dashboard-stack">
@@ -64,6 +71,23 @@ function DetailedDashboard({ handle, title, platform }) {
                 <SubmissionCalendar handle={handle} platform={platform} title={title} days={days} />
 
             </div>
+
+            {platform === "github" && (
+                <section className="content-panel">
+                    <div className="panel-heading">
+                        <h3>GitHub commits per day</h3>
+                        <span>Last 30 days</span>
+                    </div>
+                    <div className="problem-list">
+                        {Object.entries(data.commitsByDay || {}).map(([date, commits]) => (
+                            <div className="problem-row" key={date}>
+                                <span>{date}</span>
+                                <small>{commits} {commits === 1 ? "commit" : "commits"}</small>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             <ProblemTable
                 platform={platform}

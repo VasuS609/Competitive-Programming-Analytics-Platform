@@ -7,6 +7,7 @@ const SUPPORTED_PLATFORMS = new Set([
   "leetcode",
   "gfg",
   "atcoder",
+  "github",
 ]);
 
 async function syncPlatform(handle, platform) {
@@ -33,7 +34,9 @@ async function syncPlatform(handle, platform) {
   }
 
   const stats = await statsService(normalizedHandle);
-  const problems = getSolvedProblems(normalizedPlatform, normalizedHandle);
+  const problems = normalizedPlatform === "github"
+    ? stats.repositories || []
+    : getSolvedProblems(normalizedPlatform, normalizedHandle);
 
   return {
     platform: normalizedPlatform,

@@ -96,7 +96,7 @@ async function fetchFromCF(handle, { tzOffsetMin = DEFAULT_TZ_OFFSET_MIN } = {})
     const fetchedProblems = [...firstSolves.values()].map((s) => ({
         name: s.problem.name,
         rating: s.problem.rating,
-        id: s.problem.contestId,
+        id: `${s.problem.contestId}-${s.problem.index}`,
         index: s.problem.index,
         tags: s.problem.tags,
         url: problemUrl(s.problem),
