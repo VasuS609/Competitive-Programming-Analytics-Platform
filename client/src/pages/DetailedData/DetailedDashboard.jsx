@@ -3,9 +3,11 @@ import useStats from "../../hooks/useStats";
 import SubmissionCalendar from "./components/SubmissionCalendar";
 import RatingChart from "./components/RatingChart";
 import { usePlatformSync } from "../../hooks/usePlatformSync";
+import { useProfile } from "../../context/useProfile";
 
 //below, footer, more detiled view
 function DetailedDashboard({ handle, title, platform }) {
+    const { days } = useProfile();
     const { data, loading, error } = useStats(handle, platform);
     const { sync, data: syncData, loading: syncing, error: syncError } = usePlatformSync(platform, handle);
 
@@ -59,7 +61,7 @@ function DetailedDashboard({ handle, title, platform }) {
 
                 <RatingChart handle={handle} platform={platform} title={title} />
 
-                <SubmissionCalendar handle={handle} platform={platform} title={title} />
+                <SubmissionCalendar handle={handle} platform={platform} title={title} days={days} />
 
             </div>
 

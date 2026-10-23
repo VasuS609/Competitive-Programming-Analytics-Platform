@@ -12,7 +12,7 @@ app.use(rateLimit({ windowMs: 60 * 1000, limit: 60 }));
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
-app.use("/api", require("./routes/goals"));     
+// app.use("/api", require("./routes/goals"));     
 app.use("/api", require("./routes/platformRouter"));
 app.use("/api/graphs", require("./routes/graphs"));
 
