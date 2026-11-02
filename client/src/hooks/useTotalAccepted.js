@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { request } from "../api";
 
-export function useTotalAccepted(handles) {
+export function useTotalAccepted(handles, days = 7) {
   const [state, setState] = useState({ data: null, error: null, key: "" });
-  const profileKey = JSON.stringify(handles || {});
+  const profileKey = `${JSON.stringify(handles || {})}:${days}`;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -11,7 +11,7 @@ export function useTotalAccepted(handles) {
     request("/graphs/total-accepted", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ profiles: handles }),
+      body: JSON.stringify({ profiles: handles, days }),
       signal: controller.signal,
     })
       .then((data) => setState({ data, error: null, key: profileKey }))

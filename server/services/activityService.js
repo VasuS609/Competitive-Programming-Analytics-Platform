@@ -1,6 +1,7 @@
 const { getLastNDates, toUTCDateString } = require("../utils/dates");
 const { getCodeChefStats } = require("./codechef/codechefService");
 const { getLCStats } = require("./leetcode/lcService");
+const { fetchSubmissions } = require("./codeforces/cfTotalAccepted");
 
 function createActivity(days, daily, acceptedAvailable = false) {
   const dates = getLastNDates(days);
@@ -9,6 +10,8 @@ function createActivity(days, daily, acceptedAvailable = false) {
     submissions: daily[date]?.submissions || 0,
     acceptedSubmissions: acceptedAvailable ? daily[date]?.acceptedSubmissions || 0 : null,
     acceptedProblems: acceptedAvailable ? new Set(daily[date]?.acceptedProblemIds || []).size : null,
+    nonAcceptedSubmissions: acceptedAvailable ? daily[date]?.nonAcceptedSubmissions || 0 : null,
+    nonAcceptedByTag: acceptedAvailable ? daily[date]?.nonAcceptedByTag || {} : null,
   }));
   const acceptedProblemIds = rows.flatMap((row) => daily[row.date]?.acceptedProblemIds || []);
 
@@ -18,25 +21,37 @@ function createActivity(days, daily, acceptedAvailable = false) {
       submissions: rows.reduce((sum, row) => sum + row.submissions, 0),
       acceptedSubmissions: acceptedAvailable ? rows.reduce((sum, row) => sum + row.acceptedSubmissions, 0) : null,
       acceptedProblems: acceptedAvailable ? new Set(acceptedProblemIds).size : null,
+      nonAcceptedSubmissions: acceptedAvailable ? rows.reduce((sum, row) => sum + row.nonAcceptedSubmissions, 0) : null,
     },
     daily: rows,
   };
 }
 
 async function getCodeforcesActivity(handle, days = 7) {
-  const response = await fetch(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}`);
-  if (!response.ok) throw new Error(`Codeforces API Error ${response.status}`);
-
-  const body = await response.json();
+  const submissions = await fetchSubmissions(handle);
   const daily = {};
-  (body.result || []).forEach((submission) => {
+  submissions.forEach((submission) => {
     if (!submission.problem || !submission.creationTimeSeconds) return;
     const date = toUTCDateString(submission.creationTimeSeconds * 1000);
-    if (!daily[date]) daily[date] = { submissions: 0, acceptedSubmissions: 0, acceptedProblemIds: [] };
+    if (!date) return;
+    if (!daily[date]) {
+      daily[date] = {
+        submissions: 0,
+        acceptedSubmissions: 0,
+        acceptedProblemIds: [],
+        nonAcceptedSubmissions: 0,
+        nonAcceptedByTag: {},
+      };
+    }
     daily[date].submissions += 1;
     if (submission.verdict === "OK") {
       daily[date].acceptedSubmissions += 1;
       daily[date].acceptedProblemIds.push(`${submission.problem.contestId}:${submission.problem.index}`);
+    } else {
+      daily[date].nonAcceptedSubmissions += 1;
+      for (const tag of submission.problem.tags || []) {
+        daily[date].nonAcceptedByTag[tag] = (daily[date].nonAcceptedByTag[tag] || 0) + 1;
+      }
     }
   });
 

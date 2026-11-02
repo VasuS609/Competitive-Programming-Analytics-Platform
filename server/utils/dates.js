@@ -16,7 +16,13 @@ function getLastNDates(n) {
 function toUTCDateString(value) {
   if (typeof value === "string" && /^\d{4}-\d{1,2}-\d{1,2}$/.test(value)) {
     const [year, month, day] = value.split("-").map(Number);
-    return new Date(Date.UTC(year, month - 1, day)).toISOString().slice(0, 10);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (
+      date.getUTCFullYear() !== year ||
+      date.getUTCMonth() !== month - 1 ||
+      date.getUTCDate() !== day
+    ) return null;
+    return date.toISOString().slice(0, 10);
   }
   const date = value instanceof Date ? new Date(value) : new Date(value);
   if (Number.isNaN(date.getTime())) return null;

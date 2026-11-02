@@ -3,7 +3,9 @@ const { getTotalAcceptedActivity } = require("../services/graphs/totalAccepted")
 
 router.post("/total-accepted", async (req, res, next) => {
   try {
-    return res.json(await getTotalAcceptedActivity(req.body?.profiles, 7));
+    const requestedDays = Number(req.body?.days);
+    const days = Number.isInteger(requestedDays) ? requestedDays : 7;
+    return res.json(await getTotalAcceptedActivity(req.body?.profiles, days));
   } catch (error) {
     return next({
       status: error.status || 502,

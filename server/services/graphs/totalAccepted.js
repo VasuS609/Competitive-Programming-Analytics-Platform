@@ -1,6 +1,5 @@
 const { getLastNDates } = require("../../utils/dates");
-const { getCFAcceptedActivity } = require("../codeforces/cfTotalAccepted");
-const { getCFNotAcceptedActivity } = require("../codeforces/cfNotAccepted");
+const { getCodeforcesActivity } = require("../activityService");
 const { getCodeChefAcceptedActivity } = require("../codechef/ccTotalAccepted");
 const { getCodeChefNotAcceptedActivity } = require("../codechef/ccNotAccepted");
 const { getAtcoderAcceptedActivity } = require("../atcoder/atTotalAccepted");
@@ -13,19 +12,14 @@ const { getLCNotAcceptedActivity } = require("../leetcode/lcNotAccepted");
 
 const acceptedActivityServices = {
   codeforces: async (handle, days) => {
-    const [accepted, nonAccepted] = await Promise.all([
-      getCFAcceptedActivity(handle, days),
-      getCFNotAcceptedActivity(handle, days),
-    ]);
-    const byDate = {};
-    for (const row of [...accepted, ...nonAccepted]) {
-      const entry = byDate[row.date] || { submissions: 0, accepted: 0, nonAccepted: 0 };
-      entry.submissions += row.submissions || 0;
-      entry.accepted += row.accepted || 0;
-      entry.nonAccepted += row.nonAccepted || 0;
-      byDate[row.date] = entry;
-    }
-    return Object.entries(byDate).map(([date, row]) => ({ date, ...row }));
+    const activity = await getCodeforcesActivity(handle, days);
+    return activity.daily.map((row) => ({
+      date: row.date,
+      submissions: row.submissions,
+      accepted: row.acceptedSubmissions,
+      nonAccepted: row.nonAcceptedSubmissions,
+      nonAcceptedByTag: row.nonAcceptedByTag,
+    }));
   },
   codechef: (handle, days) => mergeActivities(
     getCodeChefAcceptedActivity(handle, days),
@@ -85,9 +79,10 @@ async function getTotalAcceptedActivity(profiles, days = 7) {
   const loadedProfiles = normalizeProfiles(profiles);
   const dates = getLastNDates(safeDays);
   const totals = Object.fromEntries(dates.map((date) => [date, {
-  submissions: 0,
-  accepted: 0,
-  nonAccepted: 0,
+    submissions: 0,
+    accepted: 0,
+    nonAccepted: 0,
+    nonAcceptedByTag: {},
   }]));
   const byProfile = {};
 
@@ -105,6 +100,7 @@ async function getTotalAcceptedActivity(profiles, days = 7) {
       submissions: 0,
       accepted: 0,
       nonAccepted: 0,
+      nonAcceptedByTag: {},
     }]));
     for (const entry of accepted) {
       if (!(entry.date in totals)) continue;
@@ -114,6 +110,10 @@ async function getTotalAcceptedActivity(profiles, days = 7) {
       totals[entry.date].submissions += Number(entry.submissions) || 0;
       totals[entry.date].accepted += Number(entry.accepted) || 0;
       totals[entry.date].nonAccepted += Number(entry.nonAccepted) || 0;
+      for (const [tag, count] of Object.entries(entry.nonAcceptedByTag || {})) {
+        daily[entry.date].nonAcceptedByTag[tag] = (daily[entry.date].nonAcceptedByTag[tag] || 0) + count;
+        totals[entry.date].nonAcceptedByTag[tag] = (totals[entry.date].nonAcceptedByTag[tag] || 0) + count;
+      }
     }
     byProfile[key] = { platform, handle, daily };
   }

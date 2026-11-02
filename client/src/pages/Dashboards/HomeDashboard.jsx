@@ -38,7 +38,7 @@ function getAcceptedCount(statsItem) {
 
 function HomeDashboard({ handles }) {
   const { days } = useProfile();
-  const totalAccepted = useTotalAccepted(handles);
+  const totalAccepted = useTotalAccepted(handles, days);
   const heatMapRef = useRef(null);
   const [hoveredDate, setHoveredDate] = useState(null);
 
@@ -178,7 +178,7 @@ function HomeDashboard({ handles }) {
          
           <div className="panel-heading">
             <h3>Submissions per day</h3>
-            <span>Last 7 days</span>
+            <span>Last {days} days</span>
           </div>
 
 
