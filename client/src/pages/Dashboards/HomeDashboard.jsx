@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, Radar, RadarChart, PolarAngleAxis, PolarGrid, PolarRadiusAxis, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import useStats from "../../hooks/useStats";
-import { useSubmissionCalendar} from "../../hooks/useSubmissionCalendar";
+import useHeatmap from "../../hooks/useHeatmap";
+import ActivityHeatmap from "../../components/ActivityHeatmap";
 import { useTotalAccepted } from "../../hooks/useTotalAccepted";
 import { useProfile } from "../../context/useProfile";
+
+const HEATMAP_MONTHS = 3;
 
 const platforms = [
   { id: "codeforces", label: "Codeforces", color: "#e4572e" },
@@ -14,33 +16,10 @@ const platforms = [
   { id: "atcoder", label: "AtCoder", color: "#111827" },
 ];
 
-function buildActivity(calendars) {
-  const successfulCalendars = calendars.filter(({ handle, error }) => handle && !error);
-  const dates = [...new Set(successfulCalendars.flatMap(({ data }) => data.map(({ date }) => date)))].sort();
-
-  return dates.map((date) => {
-    const row = { date };
-    successfulCalendars.forEach(({ id, data }) => {
-      row[id] = data.find((item) => item.date === date)?.count || 0;
-    });
-    return row;
-  });
-}
-
-function getAcceptedCount(statsItem) {
-  return Number(
-    statsItem?.data?.accepted ??
-    statsItem?.data?.problemSolved ??
-    statsItem?.data?.totalSolved ??
-    0,
-  ) || 0;
-}
-
 function HomeDashboard({ handles }) {
   const { days } = useProfile();
   const totalAccepted = useTotalAccepted(handles, days);
-  const heatMapRef = useRef(null);
-  const [hoveredDate, setHoveredDate] = useState(null);
+  const heatmap = useHeatmap(handles, HEATMAP_MONTHS);
 
   const codeforcesStats = useStats(handles.codeforces, "codeforces");
   const codechefStats = useStats(handles.codechef, "codechef");
@@ -48,13 +27,6 @@ function HomeDashboard({ handles }) {
   const gfgStats = useStats(handles.gfg, "gfg");
   const githubStats = useStats(handles.github, "github");
   const atcoderStats = useStats(handles.atcoder, "atcoder");
-
-  const codeforcesCalendar = useSubmissionCalendar(handles.codeforces, "codeforces", days);
-  const codechefCalendar = useSubmissionCalendar(handles.codechef, "codechef", days);
-  const leetcodeCalendar = useSubmissionCalendar(handles.leetcode, "leetcode", days);
-  const gfgCalendar = useSubmissionCalendar(handles.gfg, "gfg", days);
-  const githubCalendar = useSubmissionCalendar(handles.github, "github", days);
-  const atcoderCalendar = useSubmissionCalendar(handles.atcoder, "atcoder", days);
 
   const stats = [
     { id: "codeforces", ...codeforcesStats },
@@ -67,99 +39,30 @@ function HomeDashboard({ handles }) {
 
 
   
-  const calendars = [
-    { ...codeforcesCalendar, ...platforms[0], handle: handles.codeforces },
-    { ...codechefCalendar, ...platforms[1], handle: handles.codechef },
-    { ...leetcodeCalendar, ...platforms[2], handle: handles.leetcode },
-    { ...gfgCalendar, ...platforms[3], handle: handles.gfg },
-    { ...githubCalendar, ...platforms[4], handle: handles.github },
-    { ...atcoderCalendar, ...platforms[5], handle: handles.atcoder },
-  ];
-
-  const activity = buildActivity(calendars);
-  const activityByDate = useMemo(() => activity.reduce((result, row) => {
-    result[row.date] = platforms
-      .map(({ id, label }) => ({ id, label, count: row[id] || 0 }))
-      .filter(({ count }) => count > 0);
-    return result;
-  }, {}), [activity]);
-  const activityKey = JSON.stringify(activityByDate);
-
-  useEffect(() => {
-    const container = heatMapRef.current;
-    const heat = window.$heat;
-    if (!container || !heat) return undefined;
-
-    container.setAttribute("data-heat-js", "{ 'defaultView': 'map' }");
-    document.dispatchEvent(new Event("DOMContentLoaded"));
-
-    const populate = () => {
-      const [id] = heat.getIds();
-      if (!id) return;
-      heat.reset(id, false);
-      const currentActivity = JSON.parse(activityKey);
-      Object.entries(currentActivity).forEach(([date, entries]) => {
-        const total = entries.reduce((sum, entry) => sum + entry.count, 0);
-        for (let index = 0; index < total; index += 1) {
-          heat.addDate(id, new Date(`${date}T12:00:00Z`), "Activity", false);
-        }
-      });
-      heat.refresh(id);
-    };
-
-    const timer = window.setTimeout(populate, 0);
-    const handleMouseOver = (event) => {
-      const cell = event.target.closest("[data-heat-js-map-date]");
-      const date = cell?.getAttribute("data-heat-js-map-date");
-      if (date) setHoveredDate(date);
-    };
-    container.addEventListener("mouseover", handleMouseOver);
-
-    return () => {
-      window.clearTimeout(timer);
-      container.removeEventListener("mouseover", handleMouseOver);
-      const [id] = heat.getIds();
-      if (id) heat.destroy(id);
-    };
-  }, [activityKey]);
-
   const totalSolved = stats.reduce(
     (total, item) => total
       + (item.data?.platform === "github"
         ? 0
         : Number(item.data?.problemSolved ?? item.data?.totalSolved ?? 0)), 0);
   const radarValues = [
-    {
-      subject: "CP",
-      value: Math.round((getAcceptedCount(codeforcesStats) + getAcceptedCount(codechefStats) + getAcceptedCount(atcoderStats)) / 3),
-    },
-    {
-      subject: "DSA",
-      value: Math.round((getAcceptedCount(leetcodeStats) + getAcceptedCount(gfgStats)) / 2),
-    },
-    { subject: "Dev", value: Number(githubStats.data?.totalCommits) || 0 },
+    { subject: "CP", value: heatmap.data?.totals.cp ?? 0 },
+    { subject: "DSA", value: heatmap.data?.totals.dsa ?? 0 },
+    { subject: "Dev", value: heatmap.data?.totals.dev ?? 0 },
   ];
-  const hoveredEntries = activityByDate[hoveredDate] || [];
+  const failedPlatforms = Object.keys(heatmap.data?.errors || {});
 
   return (
     <section>
       <div className="analytics-grid">
         <section className="content-panel heat-map-panel">
           <h3>Cross-platform activity</h3>
-          <div id="heat-map" ref={heatMapRef} data-heat-js="{ 'defaultView': 'map' }"></div>
-          <div className="heat-map-details" aria-live="polite">
-            <strong>{hoveredDate || "Hover a day"}</strong>
-            {hoveredEntries.length ? hoveredEntries.map(({ id, label, count }) => (
-              <span key={id}>
-                {label} - {count} {id === "github" ? (count === 1 ? "event" : "events") : id === "atcoder" ? (count === 1 ? "contest" : "contests") : id === "gfg" ? (count === 1 ? "activity" : "activities") : "AC"}
-              </span>
-            )) : <span>No accepted activity</span>}
-          </div>
+          {!heatmap.hasHandles ? <p className="muted">Add a profile handle to see your activity.</p> : heatmap.loading ? <p className="muted">Loading activity...</p> : heatmap.error ? <p className="muted">Activity unavailable: {heatmap.error.message}</p> : heatmap.data ? <ActivityHeatmap data={heatmap.data} /> : null}
+          {failedPlatforms.length > 0 && <p className="muted heatmap-warning">Could not load: {failedPlatforms.join(", ")}</p>}
         </section>
         <section className="content-panel radar-panel">
           <div className="panel-heading">
             <h3>Direction</h3>
-            <span>Accepted activity</span>
+            <span>Last {HEATMAP_MONTHS} months</span>
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <RadarChart data={radarValues}>

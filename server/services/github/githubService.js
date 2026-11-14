@@ -95,4 +95,30 @@ async function getGithubSubmissionCalendar(handle, days = 7) {
   }));
 }
 
-module.exports = { getGithubStats, getGithubSubmissionCalendar };
+function pushCommitCount(event) {
+  const payload = event.payload || {};
+  const count = payload.distinct_size ?? payload.size ?? payload.commits?.length;
+  return Number.isFinite(Number(count)) ? Number(count) : 1;
+}
+
+const dailyCommitCache = {};
+async function getGithubDailyCommits(handle) {
+  const key = String(handle).trim().toLowerCase();
+  const cached = dailyCommitCache[key];
+  if (cached && Date.now() < cached.expiresAt) return cached.counts;
+  const counts = {};
+  for (let page = 1; page <= 3; page += 1) {
+    const events = await fetchGithub(`/users/${encodeURIComponent(handle)}/events/public?per_page=100&page=${page}`);
+    if (!Array.isArray(events) || !events.length) break;
+    for (const event of events) {
+      if (event.type !== "PushEvent" || !event.created_at) continue;
+      const date = toUTCDateString(event.created_at);
+      if (date) counts[date] = (counts[date] || 0) + pushCommitCount(event);
+    }
+    if (events.length < 100) break;
+  }
+  dailyCommitCache[key] = { counts, expiresAt: Date.now() + CACHE_TTL };
+  return counts;
+}
+
+module.exports = { getGithubStats, getGithubSubmissionCalendar, getGithubDailyCommits };

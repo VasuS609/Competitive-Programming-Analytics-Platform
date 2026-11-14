@@ -67,4 +67,18 @@ async function getGfgSubmissionCalendar(handle, days = 7) {
   return buildCalendar(counts, firstActivityDate, days);
 }
 
-module.exports = { getGfgStats, getGfgSubmissionCalendar };
+async function getGfgDailyCounts(handle) {
+  const { toUTCDateString } = require("../../utils/dates");
+  const heatmap = await fetchGfg("/heatmap", handle);
+  const counts = {};
+  for (const entry of heatmap.dailyContributions || []) {
+    const dateValue = entry.date || entry.day || entry.timestamp;
+    const countValue = entry.count ?? entry.value ?? entry.submissions ?? entry.contributions;
+    if (dateValue == null) continue;
+    const date = toUTCDateString(typeof dateValue === "number" ? dateValue * (dateValue < 1e12 ? 1000 : 1) : dateValue);
+    if (date) counts[date] = (counts[date] || 0) + (Number(countValue) || 0);
+  }
+  return counts;
+}
+
+module.exports = { getGfgStats, getGfgSubmissionCalendar, getGfgDailyCounts };
