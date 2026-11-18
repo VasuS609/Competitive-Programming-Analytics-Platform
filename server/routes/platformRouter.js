@@ -1,13 +1,39 @@
 const router = require("express").Router();
-const getPlatformService = require("../services/platformServices");
+const rateLimit = require("express-rate-limit");
+const { getPlatformService } = require("../services/platformServices");
 const { parseSubmissionDays, normalizeStats } = require("../utils/helpers");
 const { syncPlatform } = require("../services/platformSyncService");
+const { validateHandleMiddleware } = require("../utils/validateHandle");
 
 function platformName(req) {
   return req.params.platform.toLowerCase();
 }
 
-router.get("/:platform/stats/:handle", async (req, res, next) => {
+// Stricter rate limiter for sync and routes that trigger upstream requests.
+// TODO: Replace with per-user authentication and per-token limits.
+const syncRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 5,
+  message: { error: "Too many sync requests; please wait a minute before retrying." },
+});
+
+// Per-handle cooldown: reject if the same handle was synced within 60 seconds.
+const syncCooldown = new Map(); // key: `platform:handle` → timestamp
+const SYNC_COOLDOWN_MS = 60 * 1000;
+
+function checkSyncCooldown(req, res, next) {
+  const key = `${platformName(req)}:${req.params.handle}`;
+  const last = syncCooldown.get(key) || 0;
+  if (Date.now() - last < SYNC_COOLDOWN_MS) {
+    const retryAfter = Math.ceil((SYNC_COOLDOWN_MS - (Date.now() - last)) / 1000);
+    return res.status(429).json({
+      error: `This handle was synced recently. Please wait ${retryAfter}s before syncing again.`,
+    });
+  }
+  next();
+}
+
+router.get("/:platform/stats/:handle", validateHandleMiddleware, async (req, res, next) => {
   const platform = platformName(req);
   const service = getPlatformService(platform, "stats");
   if (!service) return res.status(404).json({ error: `Platform '${platform}' is not supported` });
@@ -20,7 +46,7 @@ router.get("/:platform/stats/:handle", async (req, res, next) => {
   }
 });
 
-router.get("/:platform/submissions/:handle", async (req, res, next) => {
+router.get("/:platform/submissions/:handle", validateHandleMiddleware, async (req, res, next) => {
   const platform = platformName(req);
   const service = getPlatformService(platform, "submissions");
   if (!service) return res.status(404).json({ error: `Platform '${platform}' is not supported` });
@@ -32,7 +58,7 @@ router.get("/:platform/submissions/:handle", async (req, res, next) => {
   }
 });
 
-router.get("/:platform/rating/:handle", async (req, res, next) => {
+router.get("/:platform/rating/:handle", validateHandleMiddleware, async (req, res, next) => {
   const platform = platformName(req);
   const service = getPlatformService(platform, "rating");
   if (!service) return res.status(404).json({ error: `Rating not supported for '${platform}'` });
@@ -44,7 +70,7 @@ router.get("/:platform/rating/:handle", async (req, res, next) => {
   }
 });
 
-router.get("/:platform/activity/:handle", async (req, res, next) => {
+router.get("/:platform/activity/:handle", validateHandleMiddleware, async (req, res, next) => {
   const platform = platformName(req);
   const service = getPlatformService(platform, "activity");
   if (!service) return res.status(404).json({ error: `Activity not supported for '${platform}'` });
@@ -56,15 +82,24 @@ router.get("/:platform/activity/:handle", async (req, res, next) => {
   }
 });
 
-router.post("/:platform/sync/:handle", async (req, res, next) => {
-  try {
-    return res.json(await syncPlatform(req.params.handle, req.params.platform));
-  } catch (error) {
-    return next({
-      status: error.status || 502,
-      message: error.message || "Failed to sync platform data",
-    });
-  }
-});
+router.post(
+  "/:platform/sync/:handle",
+  syncRateLimit,
+  validateHandleMiddleware,
+  checkSyncCooldown,
+  async (req, res, next) => {
+    const key = `${platformName(req)}:${req.params.handle}`;
+    try {
+      const result = await syncPlatform(req.params.handle, req.params.platform);
+      syncCooldown.set(key, Date.now());
+      return res.json(result);
+    } catch (error) {
+      return next({
+        status: error.status || 502,
+        message: error.message || "Failed to sync platform data",
+      });
+    }
+  },
+);
 
 module.exports = router;

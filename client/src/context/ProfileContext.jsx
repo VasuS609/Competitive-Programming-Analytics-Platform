@@ -1,28 +1,22 @@
 import { useState } from "react";
 import { ProfileContext } from "./profileContext";
+import { PLATFORM_IDS } from "../config/platforms";
 
 const STORAGE_KEY = "dsa-tracker:profile:v1";
-const PLATFORMS = ["codeforces", "codechef", "leetcode", "gfg", "github", "atcoder"];
+
 const DEFAULT_PROFILE = {
-  activePlatform: "codeforces",
+  activePlatform: PLATFORM_IDS[0] ?? "codeforces",
   days: 7,
-  handles: {
-    codeforces: "",
-    codechef: "",
-    leetcode: "",
-    gfg: "",
-    github: "",
-    atcoder: "",
-  },
+  handles: Object.fromEntries(PLATFORM_IDS.map((id) => [id, ""])),
 };
 
 function validateProfile(value) {
   if (!value || typeof value !== "object") return DEFAULT_PROFILE;
-  if (!PLATFORMS.includes(value.activePlatform)) return DEFAULT_PROFILE;
+  if (!PLATFORM_IDS.includes(value.activePlatform)) return DEFAULT_PROFILE;
   if (!value.handles || typeof value.handles !== "object") return DEFAULT_PROFILE;
 
   const handles = {};
-  for (const platform of PLATFORMS) {
+  for (const platform of PLATFORM_IDS) {
     if (typeof value.handles[platform] !== "string") return DEFAULT_PROFILE;
     const handle = value.handles[platform].trim();
     if (handle.length > 40) return DEFAULT_PROFILE;
@@ -56,24 +50,33 @@ function writeProfile(profile) {
 export function ProfileProvider({ children }) {
   const [profile, setProfile] = useState(readProfile);
 
-  const updateProfile = (nextProfile) => {
-    setProfile((current) => {
-      const next = validateProfile({ ...current, ...nextProfile });
+  // Always use the functional form to avoid stale-closure overwrites.
+  const updateProfile = (patch) => {
+    setProfile((prev) => {
+      const next = validateProfile({ ...prev, ...patch });
       writeProfile(next);
       return next;
     });
   };
 
   const setActivePlatform = (activePlatform) => {
-    if (!PLATFORMS.includes(activePlatform)) return;
+    if (!PLATFORM_IDS.includes(activePlatform)) return;
     updateProfile({ activePlatform });
   };
 
   const setHandle = (platform, handle) => {
-    if (!PLATFORMS.includes(platform) || typeof handle !== "string") return;
+    if (!PLATFORM_IDS.includes(platform) || typeof handle !== "string") return;
     const trimmedHandle = handle.trim();
     if (trimmedHandle.length > 40) return;
-    updateProfile({ handles: { ...profile.handles, [platform]: trimmedHandle } });
+    // Use functional form so concurrent handle updates don't overwrite each other.
+    setProfile((prev) => {
+      const next = validateProfile({
+        ...prev,
+        handles: { ...prev.handles, [platform]: trimmedHandle },
+      });
+      writeProfile(next);
+      return next;
+    });
   };
 
   return (

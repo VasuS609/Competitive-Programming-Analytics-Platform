@@ -119,16 +119,14 @@ async function getCompleteUserData(handle) {
     };
 }
 
-async function getLCStats(handle) {
+async function getLCStats(handle, { forceRefresh = false } = {}) {
     const key = String(handle).trim().toLowerCase();
     const cached = cache[key];
 
-    if (cached && Date.now() < cached.expiresAt) {
-        console.log("leetcode cache hit for:", key);
+    if (!forceRefresh && cached && Date.now() < cached.expiresAt) {
         return cached.data;
     }
 
-    console.log("leetcode cache miss for:", key);
     const data = await getCompleteUserData(String(handle).trim());
     cache[key] = { data, expiresAt: Date.now() + CACHE_TTL };
     return data;

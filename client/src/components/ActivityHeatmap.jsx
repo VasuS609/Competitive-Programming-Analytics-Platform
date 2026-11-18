@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 const LEVEL_COLORS = ["#f7e6d5", "#f2c7a1", "#ee9f66", "#ec7b36", "#e8612c"];
-const LABELS = { codeforces: "Codeforces", codechef: "CodeChef", atcoder: "AtCoder", leetcode: "LeetCode", gfg: "GeeksForGeeks", github: "GitHub" };
-const UNITS = { github: "commit", atcoder: "submission", gfg: "contribution" };
+const LABELS = { codeforces: "Codeforces", leetcode: "LeetCode", github: "GitHub" };
+const UNITS = { github: "commit" };
 
 function unitFor(platform, count) { const unit = UNITS[platform] || "submission"; return `${unit}${count === 1 ? "" : "s"}`; }
 function levelFor(count, max) { if (!count) return -1; return Math.min(4, Math.ceil((count / max) * 4)); }

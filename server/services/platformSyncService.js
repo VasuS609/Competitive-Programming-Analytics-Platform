@@ -1,20 +1,15 @@
-const getPlatformService = require("./platformServices");
+const { getPlatformService, getSupportedPlatforms } = require("./platformServices");
 const { getSolvedProblems } = require("./solvedProblemService");
 
-const SUPPORTED_PLATFORMS = new Set([
-  "codeforces",
-  "codechef",
-  "leetcode",
-  "gfg",
-  "atcoder",
-  "github",
-]);
+// TODO: Add per-user authentication before exposing sync to the public internet.
+// Until then sync is protected only by the rate limiter + per-handle cooldown
+// defined in index.js.
 
 async function syncPlatform(handle, platform) {
   const normalizedPlatform = String(platform).trim().toLowerCase();
   const normalizedHandle = String(handle).trim();
 
-  if (!SUPPORTED_PLATFORMS.has(normalizedPlatform)) {
+  if (!getSupportedPlatforms().has(normalizedPlatform)) {
     const error = new Error(`Platform '${normalizedPlatform}' is not supported`);
     error.status = 404;
     throw error;
@@ -33,10 +28,12 @@ async function syncPlatform(handle, platform) {
     throw error;
   }
 
-  const stats = await statsService(normalizedHandle);
-  const problems = normalizedPlatform === "github"
-    ? stats.repositories || []
-    : getSolvedProblems(normalizedPlatform, normalizedHandle);
+  // Pass forceRefresh so sync always fetches live data, bypassing any cache.
+  const stats = await statsService(normalizedHandle, { forceRefresh: true });
+  const problems =
+    normalizedPlatform === "github"
+      ? stats.repositories || []
+      : getSolvedProblems(normalizedPlatform, normalizedHandle);
 
   return {
     platform: normalizedPlatform,

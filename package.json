@@ -4,10 +4,11 @@
   "description": "A full-stack dashboard to track competitive programming practice, pull live Codeforces stats, log daily solves, and visualize rating progress over time.",
   "main": "server/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server/index.js",
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "test": "npm test --prefix server",
     "postinstall": "npm run install:all",
-    "install:all": "concurrently \"npm --prefix server install\" \"npm --prefix client install\"",
-    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\""
+    "install:all": "concurrently \"npm --prefix server install\" \"npm --prefix client install\""
   },
   "repository": {
     "type": "git",

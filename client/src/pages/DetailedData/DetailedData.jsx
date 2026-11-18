@@ -1,19 +1,11 @@
 import { Link, NavLink } from "react-router-dom";
 import DetailedDashboard from "./DetailedDashboard";
 import { useProfile } from "../../context/useProfile";
-
-const platforms = [
-  { id: "codeforces", label: "Codeforces" },
-  { id: "codechef", label: "CodeChef" },
-  { id: "leetcode", label: "LeetCode" },
-  { id: "gfg", label: "GeeksForGeeks" },
-  { id: "github", label: "GitHub" },
-  { id: "atcoder", label: "AtCoder" },
-];
+import { SUPPORTED_PLATFORMS } from "../../config/platforms";
 
 function DetailedData() {
   const { activePlatform, handles, setActivePlatform } = useProfile();
-  const platform = platforms.find(({ id }) => id === activePlatform);
+  const platform = SUPPORTED_PLATFORMS.find(({ id }) => id === activePlatform);
   const handle = handles[activePlatform];
 
   return (
@@ -40,7 +32,7 @@ function DetailedData() {
       </section>
 
       <nav className="platform-tabs" aria-label="Platform details">
-        {platforms.map(({ id, label }) => (
+        {SUPPORTED_PLATFORMS.map(({ id, label }) => (
           <button
             key={id}
             className={`tab-button ${activePlatform === id ? "active" : ""}`}
@@ -56,11 +48,11 @@ function DetailedData() {
         <DetailedDashboard
           handle={handle}
           platform={activePlatform}
-          title={platform.label}
+          title={platform?.label ?? activePlatform}
         />
       ) : (
         <div className="status-panel">
-          Add your username on <Link to="/">Home</Link> to view {platform.label} details.
+          Add your username on <Link to="/">Home</Link> to view {platform?.label ?? activePlatform} details.
         </div>
       )}
     </main>

@@ -1,23 +1,136 @@
 const { toUTCDateString } = require("../utils/dates");
-const GROUPS = { cp: ["codeforces", "codechef", "atcoder"], dsa: ["leetcode", "gfg"], dev: ["github"] };
-const GROUP_OF = Object.fromEntries(Object.entries(GROUPS).flatMap(([group, platforms]) => platforms.map((platform) => [platform, group])));
+
+// Supported groups and platforms.
+// CodeChef, GFG and AtCoder are temporarily removed; re-add them here and in
+// defaultFetchers below once their services return correct data.
+const GROUPS = {
+  cp:  ["codeforces"],
+  dsa: ["leetcode"],
+  dev: ["github"],
+};
+const GROUP_OF = Object.fromEntries(
+  Object.entries(GROUPS).flatMap(([group, platforms]) =>
+    platforms.map((platform) => [platform, group]),
+  ),
+);
 const PLATFORMS = Object.keys(GROUP_OF);
 const CACHE_TTL = 10 * 60 * 1000;
 const cache = {};
 
-function bump(counts, date, amount) { if (date && amount > 0) counts[date] = (counts[date] || 0) + amount; }
-async function codeforcesCounts(handle) { const { fetchSubmissions } = require("./codeforces/cfTotalAccepted"); const counts = {}; for (const submission of await fetchSubmissions(handle)) bump(counts, toUTCDateString(Number(submission.creationTimeSeconds) * 1000), 1); return counts; }
-async function codechefCounts(handle) { const { getCodeChefStats } = require("./codechef/codechefService"); const { heatMap } = await getCodeChefStats(handle); const entries = Array.isArray(heatMap) ? heatMap.map(({ date, value }) => [date, value]) : Object.entries(heatMap || {}); const counts = {}; entries.forEach(([date, count]) => bump(counts, toUTCDateString(date), Number(count) || 0)); return counts; }
-async function leetcodeCounts(handle) { const { getLCStats } = require("./leetcode/lcService"); const { submissionCalendar } = await getLCStats(handle); const calendar = typeof submissionCalendar === "string" ? JSON.parse(submissionCalendar || "{}") : submissionCalendar || {}; const counts = {}; Object.entries(calendar).forEach(([timestamp, count]) => bump(counts, toUTCDateString(Number(timestamp) * 1000), Number(count) || 0)); return counts; }
-async function atcoderCounts(handle, { from }) { const { fetchAtcoderSubmissions } = require("./atcoder/atSubmissions"); const counts = {}; const fromSecond = Math.floor(Date.parse(`${from}T00:00:00Z`) / 1000); for (const row of await fetchAtcoderSubmissions(handle, fromSecond)) bump(counts, toUTCDateString(Number(row.epoch_second) * 1000), 1); return counts; }
-const defaultFetchers = { codeforces: codeforcesCounts, codechef: codechefCounts, leetcode: leetcodeCounts, gfg: (handle) => require("./geeksforgeeks/gfgService").getGfgDailyCounts(handle), atcoder: atcoderCounts, github: (handle) => require("./github/githubService").getGithubDailyCommits(handle) };
+function bump(counts, date, amount) {
+  if (date && amount > 0) counts[date] = (counts[date] || 0) + amount;
+}
+
+async function codeforcesCounts(handle) {
+  const { fetchSubmissions } = require("./codeforces/cfTotalAccepted");
+  const counts = {};
+  for (const submission of await fetchSubmissions(handle)) {
+    bump(counts, toUTCDateString(Number(submission.creationTimeSeconds) * 1000), 1);
+  }
+  return counts;
+}
+
+async function leetcodeCounts(handle) {
+  const { getLCStats } = require("./leetcode/lcService");
+  const { submissionCalendar } = await getLCStats(handle);
+  const calendar =
+    typeof submissionCalendar === "string"
+      ? JSON.parse(submissionCalendar || "{}")
+      : submissionCalendar || {};
+  const counts = {};
+  Object.entries(calendar).forEach(([timestamp, count]) =>
+    bump(counts, toUTCDateString(Number(timestamp) * 1000), Number(count) || 0),
+  );
+  return counts;
+}
+
+const defaultFetchers = {
+  codeforces: codeforcesCounts,
+  leetcode: leetcodeCounts,
+  github: (handle) => require("./github/githubService").getGithubDailyCommits(handle),
+};
+
 function pad(value) { return String(value).padStart(2, "0"); }
-function formatDate(date) { return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`; }
-function getRange(months, now = new Date()) { const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())); const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1)); return { months, from: formatDate(from), to: formatDate(to) }; }
-function listDates(from, to) { const dates = []; const cursor = new Date(`${from}T00:00:00Z`); const end = new Date(`${to}T00:00:00Z`); while (cursor <= end) { dates.push(formatDate(cursor)); cursor.setUTCDate(cursor.getUTCDate() + 1); } return dates; }
-function computeStreaks(daily) { let longest = 0; let running = 0; for (const day of daily) { running = day.total > 0 ? running + 1 : 0; longest = Math.max(longest, running); } let current = 0; let index = daily.length - 1; if (index >= 0 && daily[index].total === 0) index -= 1; for (; index >= 0 && daily[index].total > 0; index -= 1) current += 1; return { current, longest }; }
-function buildHeatmap(countsByPlatform, range, errors = {}) { const dates = listDates(range.from, range.to); const totals = { cp: 0, dsa: 0, dev: 0, total: 0 }; const daily = dates.map((date) => { const platforms = {}; const row = { date, total: 0, cp: 0, dsa: 0, dev: 0, platforms }; for (const [platform, counts] of Object.entries(countsByPlatform)) { const count = Number(counts[date]) || 0; if (!count) continue; platforms[platform] = count; row[GROUP_OF[platform]] += count; row.total += count; } for (const key of ["cp", "dsa", "dev", "total"]) totals[key] += row[key]; return row; }); return { range, loaded: Object.keys(countsByPlatform), errors, totals, activeDays: daily.filter((day) => day.total > 0).length, streak: computeStreaks(daily), daily }; }
-async function cachedCounts(platform, handle, range, fetchers) { const key = `${platform}:${handle.toLowerCase()}:${platform === "atcoder" ? range.from : ""}`; const hit = cache[key]; if (hit && Date.now() < hit.expiresAt) return hit.counts; const counts = await fetchers[platform](handle, range); cache[key] = { counts, expiresAt: Date.now() + CACHE_TTL }; return counts; }
-async function getHeatmap(handles = {}, months = 3, { fetchers = defaultFetchers, now } = {}) { const range = getRange(months, now); const requested = PLATFORMS.map((platform) => [platform, typeof handles[platform] === "string" ? handles[platform].trim() : ""]).filter(([, handle]) => handle); const results = await Promise.allSettled(requested.map(([platform, handle]) => cachedCounts(platform, handle, range, fetchers))); const countsByPlatform = {}; const errors = {}; results.forEach((result, index) => { const [platform] = requested[index]; if (result.status === "fulfilled") countsByPlatform[platform] = result.value; else errors[platform] = result.reason?.message || "Failed to load activity"; }); return buildHeatmap(countsByPlatform, range, errors); }
-function parseMonths(value) { const months = Number(value); return Number.isInteger(months) ? Math.min(12, Math.max(1, months)) : 3; }
+function formatDate(date) {
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+}
+function getRange(months, now = new Date()) {
+  const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1));
+  return { months, from: formatDate(from), to: formatDate(to) };
+}
+function listDates(from, to) {
+  const dates = [];
+  const cursor = new Date(`${from}T00:00:00Z`);
+  const end = new Date(`${to}T00:00:00Z`);
+  while (cursor <= end) {
+    dates.push(formatDate(cursor));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
+}
+function computeStreaks(daily) {
+  let longest = 0; let running = 0;
+  for (const day of daily) { running = day.total > 0 ? running + 1 : 0; longest = Math.max(longest, running); }
+  let current = 0; let index = daily.length - 1;
+  if (index >= 0 && daily[index].total === 0) index -= 1;
+  for (; index >= 0 && daily[index].total > 0; index -= 1) current += 1;
+  return { current, longest };
+}
+function buildHeatmap(countsByPlatform, range, errors = {}) {
+  const dates = listDates(range.from, range.to);
+  const totals = { cp: 0, dsa: 0, dev: 0, total: 0 };
+  const daily = dates.map((date) => {
+    const platforms = {};
+    const row = { date, total: 0, cp: 0, dsa: 0, dev: 0, platforms };
+    for (const [platform, counts] of Object.entries(countsByPlatform)) {
+      const count = Number(counts[date]) || 0;
+      if (!count) continue;
+      platforms[platform] = count;
+      row[GROUP_OF[platform]] += count;
+      row.total += count;
+    }
+    for (const key of ["cp", "dsa", "dev", "total"]) totals[key] += row[key];
+    return row;
+  });
+  return {
+    range,
+    loaded: Object.keys(countsByPlatform),
+    errors,
+    totals,
+    activeDays: daily.filter((day) => day.total > 0).length,
+    streak: computeStreaks(daily),
+    daily,
+  };
+}
+async function cachedCounts(platform, handle, range, fetchers) {
+  const key = `${platform}:${handle.toLowerCase()}:`;
+  const hit = cache[key];
+  if (hit && Date.now() < hit.expiresAt) return hit.counts;
+  const counts = await fetchers[platform](handle, range);
+  cache[key] = { counts, expiresAt: Date.now() + CACHE_TTL };
+  return counts;
+}
+async function getHeatmap(handles = {}, months = 3, { fetchers = defaultFetchers, now } = {}) {
+  const range = getRange(months, now);
+  const requested = PLATFORMS
+    .map((platform) => [platform, typeof handles[platform] === "string" ? handles[platform].trim() : ""])
+    .filter(([, handle]) => handle);
+  const results = await Promise.allSettled(
+    requested.map(([platform, handle]) => cachedCounts(platform, handle, range, fetchers)),
+  );
+  const countsByPlatform = {};
+  const errors = {};
+  results.forEach((result, index) => {
+    const [platform] = requested[index];
+    if (result.status === "fulfilled") countsByPlatform[platform] = result.value;
+    else errors[platform] = result.reason?.message || "Failed to load activity";
+  });
+  return buildHeatmap(countsByPlatform, range, errors);
+}
+function parseMonths(value) {
+  const months = Number(value);
+  return Number.isInteger(months) ? Math.min(12, Math.max(1, months)) : 3;
+}
+
 module.exports = { defaultFetchers, getHeatmap, buildHeatmap, getRange, parseMonths, GROUPS, PLATFORMS };

@@ -1,8 +1,10 @@
 const { getLastNDates, toUTCDateString } = require("../utils/dates");
-const { getCodeChefStats } = require("./codechef/codechefService");
 const { getLCStats } = require("./leetcode/lcService");
 const { fetchSubmissions } = require("./codeforces/cfTotalAccepted");
 
+// createActivity builds the canonical activity response shape:
+// { range, totals, daily: [{ date, submissions, acceptedSubmissions?,
+//   acceptedProblems?, nonAcceptedSubmissions?, nonAcceptedByTag? }] }
 function createActivity(days, daily, acceptedAvailable = false) {
   const dates = getLastNDates(days);
   const rows = dates.map((date) => ({
@@ -58,17 +60,6 @@ async function getCodeforcesActivity(handle, days = 7) {
   return createActivity(days, daily, true);
 }
 
-async function getCodeChefActivity(handle, days = 7) {
-  const stats = await getCodeChefStats(handle);
-  const daily = {};
-  const entries = Array.isArray(stats.heatMap) ? stats.heatMap : Object.entries(stats.heatMap || {});
-  entries.forEach((entry) => {
-    const [date, count] = Array.isArray(entry) ? entry : [entry.date, entry.value];
-    daily[toUTCDateString(date)] = { submissions: Number(count) || 0 };
-  });
-  return createActivity(days, daily);
-}
-
 async function getLeetcodeActivity(handle, days = 7) {
   const stats = await getLCStats(handle);
   const calendar = typeof stats.submissionCalendar === "string" ? JSON.parse(stats.submissionCalendar || "{}") : stats.submissionCalendar || {};
@@ -79,4 +70,15 @@ async function getLeetcodeActivity(handle, days = 7) {
   return createActivity(days, daily);
 }
 
-module.exports = { getCodeforcesActivity, getCodeChefActivity, getLeetcodeActivity };
+// GitHub activity: converts commitsByDay (date→count) to the standard shape.
+async function getGithubActivity(handle, days = 7) {
+  const { getGithubStats } = require("./github/githubService");
+  const stats = await getGithubStats(handle);
+  const daily = {};
+  for (const [date, count] of Object.entries(stats.commitsByDay || {})) {
+    if (count > 0) daily[date] = { submissions: count };
+  }
+  return createActivity(days, daily);
+}
+
+module.exports = { getCodeforcesActivity, getLeetcodeActivity, getGithubActivity, createActivity };

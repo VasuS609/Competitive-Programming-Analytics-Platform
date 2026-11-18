@@ -1,57 +1,51 @@
-const { getLCStats, getLCRatingHistory } = require("./leetcode/lcService");
+// Platform registry — add a platform back by importing its services here and
+// adding one entry to PLATFORM_REGISTRY below.
+const { getLCStats } = require("./leetcode/lcService");
 const { getLeetcodeSubmissionCalendar } = require("./leetcode/lcSubmissionsCalendar");
-const { getCodeChefStats } = require("./codechef/codechefService");
-const { getCodeChefRatingHistory } = require("./codechef/ccRating");
-const { getCodechefSubmissionCalendar } = require("./codechef/ccSubmissionsCalendar");
+const { getLCRatingHistory } = require("./leetcode/lcRating");
+const { getLeetcodeActivity } = require("./activityService");
+
 const { getCodeforcesSubmissionCalendar } = require("./codeforces/cfSubmissionsCalendar");
 const { getCFStats } = require("./codeforces/cfService");
 const { fetchRatingHistory: getCodeforcesRatingHistory } = require("./codeforces/cfRating");
-const { getCodeforcesActivity, getCodeChefActivity, getLeetcodeActivity } = require("./activityService");
-const { getGfgStats, getGfgSubmissionCalendar } = require("./geeksforgeeks/gfgService");
-const { getAtcoderStats, getAtcoderRatingHistory, getAtcoderSubmissionCalendar } = require("./atcoder/atcoderService");
-const { getAtcoderRatingHistory: getSeparatedAtcoderRatingHistory } = require("./atcoder/atRating");
-const { getLCRatingHistory: getSeparatedLCRatingHistory } = require("./leetcode/lcRating");
-const { getGithubStats, getGithubSubmissionCalendar } = require("./github/githubService");
+const { getCodeforcesActivity } = require("./activityService");
 
-const platformServices = {
+const { getGithubStats, getGithubSubmissionCalendar } = require("./github/githubService");
+const { getGithubActivity } = require("./activityService");
+
+// PLATFORM_REGISTRY is the single source of truth for supported platforms.
+// Each entry maps service-type strings ("stats", "submissions", "rating",
+// "activity") to the function that handles that type for the platform.
+// CodeChef, GFG and AtCoder have been temporarily removed because they
+// returned incorrect data; re-add them here once their services are fixed.
+const PLATFORM_REGISTRY = {
   codeforces: {
     stats: getCFStats,
     submissions: getCodeforcesSubmissionCalendar,
     rating: getCodeforcesRatingHistory,
     activity: getCodeforcesActivity,
   },
-  codechef: {
-    stats: getCodeChefStats,
-    submissions: getCodechefSubmissionCalendar,
-    rating: getCodeChefRatingHistory,
-    activity: getCodeChefActivity,
-  },
   leetcode: {
     stats: getLCStats,
     submissions: getLeetcodeSubmissionCalendar,
-    rating: getSeparatedLCRatingHistory,
+    rating: getLCRatingHistory,
     activity: getLeetcodeActivity,
-  },
-  gfg: {
-    stats: getGfgStats,
-    submissions: getGfgSubmissionCalendar,
-    rating: async () => [],
-  },
-  atcoder: {
-    stats: getAtcoderStats,
-    submissions: getAtcoderSubmissionCalendar,
-    rating: getSeparatedAtcoderRatingHistory,
   },
   github: {
     stats: getGithubStats,
     submissions: getGithubSubmissionCalendar,
-    activity: getGithubSubmissionCalendar,
+    activity: getGithubActivity,
     rating: async () => [],
   },
 };
 
 function getPlatformService(platform, type) {
-  return platformServices[platform]?.[type];
+  return PLATFORM_REGISTRY[platform]?.[type];
 }
 
-module.exports = getPlatformService;
+/** Returns the set of registered platform names. */
+function getSupportedPlatforms() {
+  return new Set(Object.keys(PLATFORM_REGISTRY));
+}
+
+module.exports = { getPlatformService, getSupportedPlatforms, PLATFORM_REGISTRY };

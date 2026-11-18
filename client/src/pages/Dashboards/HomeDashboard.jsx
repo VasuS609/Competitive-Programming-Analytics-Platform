@@ -4,48 +4,32 @@ import useHeatmap from "../../hooks/useHeatmap";
 import ActivityHeatmap from "../../components/ActivityHeatmap";
 import { useTotalAccepted } from "../../hooks/useTotalAccepted";
 import { useProfile } from "../../context/useProfile";
+import { SUPPORTED_PLATFORMS } from "../../config/platforms";
 
 const HEATMAP_MONTHS = 3;
-
-const platforms = [
-  { id: "codeforces", label: "Codeforces", color: "#e4572e" },
-  { id: "codechef", label: "CodeChef", color: "#2f80ed" },
-  { id: "leetcode", label: "LeetCode", color: "#f2c94c" },
-  { id: "gfg", label: "GeeksForGeeks", color: "#2f8d46" },
-  { id: "github", label: "GitHub", color: "#24292f" },
-  { id: "atcoder", label: "AtCoder", color: "#111827" },
-];
 
 function HomeDashboard({ handles }) {
   const { days } = useProfile();
   const totalAccepted = useTotalAccepted(handles, days);
   const heatmap = useHeatmap(handles, HEATMAP_MONTHS);
 
-  const codeforcesStats = useStats(handles.codeforces, "codeforces");
-  const codechefStats = useStats(handles.codechef, "codechef");
-  const leetcodeStats = useStats(handles.leetcode, "leetcode");
-  const gfgStats = useStats(handles.gfg, "gfg");
-  const githubStats = useStats(handles.github, "github");
-  const atcoderStats = useStats(handles.atcoder, "atcoder");
+  // Build stats hooks for all supported platforms only.
+  const statsByPlatform = SUPPORTED_PLATFORMS.map(({ id }) => ({
+    id,
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    ...useStats(handles[id], id),
+  }));
 
-  const stats = [
-    { id: "codeforces", ...codeforcesStats },
-    { id: "codechef", ...codechefStats },
-    { id: "leetcode", ...leetcodeStats },
-    { id: "gfg", ...gfgStats },
-    { id: "github", ...githubStats },
-    { id: "atcoder", ...atcoderStats },
-  ];
-
-
-  
-  const totalSolved = stats.reduce(
-    (total, item) => total
-      + (item.data?.platform === "github"
+  const totalSolved = statsByPlatform.reduce(
+    (total, item) =>
+      total +
+      (item.data?.platform === "github"
         ? 0
-        : Number(item.data?.problemSolved ?? item.data?.totalSolved ?? 0)), 0);
+        : Number(item.data?.problemSolved ?? item.data?.totalSolved ?? 0)),
+    0,
+  );
   const radarValues = [
-    { subject: "CP", value: heatmap.data?.totals.cp ?? 0 },
+    { subject: "CP",  value: heatmap.data?.totals.cp  ?? 0 },
     { subject: "DSA", value: heatmap.data?.totals.dsa ?? 0 },
     { subject: "Dev", value: heatmap.data?.totals.dev ?? 0 },
   ];
@@ -84,7 +68,6 @@ function HomeDashboard({ handles }) {
             <span>Last {days} days</span>
           </div>
 
-
           {totalAccepted.loading ? (
             <p className="muted">Loading submissions...</p>
           ) : totalAccepted.error ? (
@@ -119,7 +102,7 @@ function HomeDashboard({ handles }) {
 
         <div className="stat-card">
           <span className="stat-label">Platforms loaded</span>
-          <strong className="stat-value">{stats.filter((item) => item.data).length}/{Object.values(handles).filter(Boolean).length}</strong>
+          <strong className="stat-value">{statsByPlatform.filter((item) => item.data).length}/{Object.values(handles).filter(Boolean).length}</strong>
           <small className="stat-note">Live profile data</small>
         </div>
         
@@ -129,10 +112,10 @@ function HomeDashboard({ handles }) {
             <h3>Current ratings</h3>
             <span>Live data</span>
           </div>
-          {stats.map((item) => (
+          {statsByPlatform.map((item) => (
            
             <div className="rating-row" key={item.id}>
-              <span>{platforms.find(({ id }) => id === item.id).label}</span>
+              <span>{SUPPORTED_PLATFORMS.find(({ id }) => id === item.id)?.label}</span>
               <strong>{item.loading ? "..." : item.data?.rating ?? item.data?.currentRating ?? "Unavailable"}</strong>
             </div>
 

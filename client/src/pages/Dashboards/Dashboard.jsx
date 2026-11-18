@@ -2,19 +2,11 @@ import { useState } from "react";
 import HomeDashboard from "./HomeDashboard";
 import { NavLink } from "react-router-dom";
 import { useProfile } from "../../context/useProfile";
-
-const platforms = [
-  { id: "codeforces", label: "Codeforces" },
-  { id: "codechef", label: "CodeChef" },
-  { id: "leetcode", label: "LeetCode" },
-  { id: "gfg", label: "GeeksForGeeks" },
-  { id: "github", label: "GitHub" },
-  { id: "atcoder", label: "AtCoder" },
-];
+import { SUPPORTED_PLATFORMS } from "../../config/platforms";
 
 function ProfileForm({ activePlatform, handles, setActivePlatform, setHandle }) {
-  const [draft, setDraft] = useState(handles[activePlatform]);
-  const platform = platforms.find(({ id }) => id === activePlatform);
+  const [draft, setDraft] = useState(handles[activePlatform] ?? "");
+  const platform = SUPPORTED_PLATFORMS.find(({ id }) => id === activePlatform);
 
   const saveHandle = (event) => {
     event.preventDefault();
@@ -30,7 +22,7 @@ function ProfileForm({ activePlatform, handles, setActivePlatform, setHandle }) 
           onChange={(event) => setActivePlatform(event.target.value)}
           className="border rounded px-2 py-3"
         >
-          {platforms.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
+          {SUPPORTED_PLATFORMS.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
         </select>
       </label>
       <label className="field-label items-center">
@@ -38,7 +30,7 @@ function ProfileForm({ activePlatform, handles, setActivePlatform, setHandle }) 
         <input
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder={`${platform.label} username`}
+          placeholder={`${platform?.label ?? activePlatform} username`}
           maxLength={40}
         />
       </label>
