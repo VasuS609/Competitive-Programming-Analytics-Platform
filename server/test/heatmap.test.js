@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { getHeatmap, getRange, parseMonths } = require("../services/heatmapService");
+const { getHeatmap, getRange, parseMonths, buildHeatmap, levelFor } = require("../services/heatmapService");
 
 const now = new Date("2026-11-13T10:00:00Z");
 
@@ -26,4 +26,33 @@ test("parseMonths clamps and defaults", () => {
   assert.equal(parseMonths(undefined), 3);
   assert.equal(parseMonths("0"), 1);
   assert.equal(parseMonths("99"), 12);
+});
+
+test("day with no events produces count 0, is level 0, and is not counted as active", () => {
+  const range = { from: "2026-11-01", to: "2026-11-03", months: 1 };
+  const countsByPlatform = {
+    codeforces: { "2026-11-01": 5 },
+  };
+  const result = buildHeatmap(countsByPlatform, range);
+
+  // Exactly 1 active day out of 3 days
+  assert.equal(result.activeDays, 1);
+  assert.equal(result.daily.length, 3);
+
+  // Day with events
+  const dayWithEvents = result.daily.find((d) => d.date === "2026-11-01");
+  assert.equal(dayWithEvents.total, 5);
+
+  // Day with no events
+  const dayEmpty = result.daily.find((d) => d.date === "2026-11-02");
+  assert.equal(dayEmpty.total, 0);
+  assert.equal(dayEmpty.cp, 0);
+  assert.equal(dayEmpty.dsa, 0);
+  assert.equal(dayEmpty.dev, 0);
+  assert.deepEqual(dayEmpty.platforms, {});
+
+  // Assert level is 0 and not counted as active
+  const max = Math.max(1, ...result.daily.map((d) => d.total));
+  assert.equal(levelFor(dayEmpty.total, max), 0);
+  assert.equal(dayEmpty.total > 0, false);
 });

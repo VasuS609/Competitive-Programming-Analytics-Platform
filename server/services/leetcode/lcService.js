@@ -1,7 +1,11 @@
 const { LeetCode } = require("leetcode-query");
 const { getSolvedProblems, syncSolvedProblems } = require("../solvedProblemService");
 
-const leetcode = new LeetCode(); 
+let _lc;
+function getLCClient() {
+    if (!_lc) _lc = new LeetCode();
+    return _lc;
+} 
 const cache = {};
 const CACHE_TTL = 10 * 60 * 1000;
 
@@ -30,7 +34,7 @@ function normalizeRatingHistory(history) {
 
 async function fetchContestInfo(handle) {
     try {
-        return await leetcode.user_contest_info(handle);
+        return await getLCClient().user_contest_info(handle);
     } catch (error) {
         console.warn("leetcode contest info unavailable for", handle, "-", error.message);
         return null;
@@ -42,7 +46,7 @@ async function fetchRecentAccepted(handle, fallbackSubmissions) {
     let accepted = [];
 
     try {
-        const res = await leetcode.graphql({
+        const res = await getLCClient().graphql({
             query: RECENT_AC_QUERY,
             variables: { username: handle, limit: 50 },
         });
@@ -71,7 +75,7 @@ async function fetchRecentAccepted(handle, fallbackSubmissions) {
 
 async function getCompleteUserData(handle) {
     const [user, contestInfo] = await Promise.all([
-        leetcode.user(handle),
+        getLCClient().user(handle),
         fetchContestInfo(handle),
     ]);
 

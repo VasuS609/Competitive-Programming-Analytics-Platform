@@ -12,9 +12,9 @@ const GITHUB_HEADERS = {
 
 const cache = {};
 const CACHE_TTL = 10 * 60 * 1000;
-// GitHub Events API caps at 10 pages × 100 events = 300 events (30 days).
+// GitHub Events API caps at 10 pages × 100 events = 300 events (up to 90 days).
 const MAX_EVENT_PAGES = 10;
-const EVENTS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const STATS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days for user stats card
 
 async function fetchGithub(path) {
   return fetchJson(`${API_BASE}${path}`, { headers: GITHUB_HEADERS });
@@ -35,7 +35,7 @@ async function getGithubData(handle, { forceRefresh = false } = {}) {
   const cached = cache[key];
   if (!forceRefresh && cached && Date.now() < cached.expiresAt) return cached.data;
 
-  const cutoff = Date.now() - EVENTS_WINDOW_MS;
+  const cutoff = Date.now() - STATS_WINDOW_MS;
 
   // Fetch profile and repos in parallel, then paginate events sequentially.
   const [profile, repositories] = await Promise.all([
@@ -53,7 +53,6 @@ async function getGithubData(handle, { forceRefresh = false } = {}) {
     );
     if (!Array.isArray(events) || !events.length) break;
 
-    // Stop early if we have gone past the 30-day window.
     const oldest = events[events.length - 1];
     const oldestMs = oldest?.created_at ? Date.parse(oldest.created_at) : 0;
     allEvents = allEvents.concat(events);
@@ -120,13 +119,45 @@ async function getGithubSubmissionCalendar(handle, days = 7) {
 }
 
 const dailyCommitCache = {};
-async function getGithubDailyCommits(handle, { forceRefresh = false } = {}) {
+async function getGithubDailyCommits(handle, range, opts = {}) {
+  let forceRefresh = false;
+  if (range && typeof range.forceRefresh === "boolean") {
+    forceRefresh = range.forceRefresh;
+    range = undefined;
+  } else if (opts && typeof opts.forceRefresh === "boolean") {
+    forceRefresh = opts.forceRefresh;
+  }
+
   const key = String(handle).trim().toLowerCase();
   const cached = dailyCommitCache[key];
   if (!forceRefresh && cached && Date.now() < cached.expiresAt) return cached.counts;
 
-  const stats = await getGithubData(handle, { forceRefresh });
-  const counts = { ...stats.commitsByDay };
+  // Window matches the heatmap/radar range (e.g. 3 months / ~90 days)
+  const cutoffMs = range?.from
+    ? Date.parse(`${range.from}T00:00:00Z`)
+    : Date.now() - 90 * 24 * 60 * 60 * 1000;
+
+  const counts = {};
+  for (let page = 1; page <= MAX_EVENT_PAGES; page += 1) {
+    const events = await fetchGithub(
+      `/users/${encodeURIComponent(handle)}/events/public?per_page=100&page=${page}`,
+    );
+    if (!Array.isArray(events) || !events.length) break;
+
+    for (const event of events) {
+      if (event.type !== "PushEvent" || !event.created_at) continue;
+      const eventTime = Date.parse(event.created_at);
+      if (eventTime < cutoffMs) continue;
+      const date = toUTCDateString(event.created_at);
+      if (date) counts[date] = (counts[date] || 0) + pushCommitCount(event);
+    }
+
+    const oldest = events[events.length - 1];
+    const oldestMs = oldest?.created_at ? Date.parse(oldest.created_at) : 0;
+    if (oldestMs > 0 && oldestMs < cutoffMs) break;
+    if (events.length < 100) break;
+  }
+
   dailyCommitCache[key] = { counts, expiresAt: Date.now() + CACHE_TTL };
   return counts;
 }

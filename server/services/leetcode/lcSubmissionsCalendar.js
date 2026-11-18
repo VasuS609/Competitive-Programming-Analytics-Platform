@@ -3,7 +3,11 @@ const { LeetCode } = require("leetcode-query");
 const { buildCalendar, getLastNDates, toUTCDateString } = require("../../utils/dates");
 const cache = {};
 const CACHE_TTL = 10 * 60 * 1000;
-const leetcode = new LeetCode();
+let _lc;
+function getLCClient() {
+  if (!_lc) _lc = new LeetCode();
+  return _lc;
+}
 
 const RECENT_AC_QUERY = `query recentAcSubmissions($username: String!, $limit: Int!) {
   recentAcSubmissionList(username: $username, limit: $limit) {
@@ -28,7 +32,7 @@ async function getLeetcodeSubmissionCalendar(handle, days = 7) {
 
   let acceptedSubmissions = profile.recentSubmissionList || [];
   try {
-    const response = await leetcode.graphql({
+    const response = await getLCClient().graphql({
       query: RECENT_AC_QUERY,
       variables: { username: handle, limit: 50 },
     });

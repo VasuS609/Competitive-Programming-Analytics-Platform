@@ -45,9 +45,9 @@ async function leetcodeCounts(handle) {
 }
 
 const defaultFetchers = {
-  codeforces: codeforcesCounts,
-  leetcode: leetcodeCounts,
-  github: (handle) => require("./github/githubService").getGithubDailyCommits(handle),
+  codeforces: (handle, range) => codeforcesCounts(handle, range),
+  leetcode: (handle, range) => leetcodeCounts(handle, range),
+  github: (handle, range) => require("./github/githubService").getGithubDailyCommits(handle, range),
 };
 
 function pad(value) { return String(value).padStart(2, "0"); }
@@ -133,4 +133,18 @@ function parseMonths(value) {
   return Number.isInteger(months) ? Math.min(12, Math.max(1, months)) : 3;
 }
 
-module.exports = { defaultFetchers, getHeatmap, buildHeatmap, getRange, parseMonths, GROUPS, PLATFORMS };
+function levelFor(count, max) {
+  if (!count || count <= 0) return 0;
+  return Math.min(4, Math.max(1, Math.ceil((count / max) * 4)));
+}
+
+module.exports = {
+  defaultFetchers,
+  getHeatmap,
+  buildHeatmap,
+  getRange,
+  parseMonths,
+  levelFor,
+  GROUPS,
+  PLATFORMS,
+};

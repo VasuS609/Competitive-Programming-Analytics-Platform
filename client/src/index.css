@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+@theme {
+  --color-paper: #ffffff;
+  --color-ink: #17211b;
+}
 
 :root {
   font-family: "Trebuchet MS", "Segoe UI", sans-serif;
@@ -7,7 +11,21 @@
   background: #f5f7f2;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+
+  /* Heatmap intensity colors (level 0 to 4) */
+  --heatmap-level-0: #eef1ed;
+  --heatmap-level-1: #f7e6d5;
+  --heatmap-level-2: #f2c7a1;
+  --heatmap-level-3: #ee9f66;
+  --heatmap-level-4: #e8612c;
+
+  --color-paper: #ffffff;
+  --color-ink: #17211b;
 }
+
+.bg-paper { background-color: #ffffff; }
+.text-ink { color: #17211b; }
+.text-ink\/60 { color: rgba(23, 33, 27, 0.6); }
 
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; background: #f5f7f2; }
@@ -84,6 +102,166 @@ button { cursor: pointer; }
 .status-panel { padding: 18px; color: #718077; font-size: 13px; }
 .status-panel.error { color: #b44c42; }
 .muted { color: #89958d; font-size: 13px; }
+
+/* Activity Heatmap component styles */
+.heatmap {
+  margin-top: 4px;
+}
+
+.heatmap-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.heatmap-head h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #718077;
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #89958d;
+}
+
+.heatmap-legend i {
+  display: inline-block;
+  width: 64px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+.heatmap-scroll,
+.heatmap-wrapper {
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.heatmap-container {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  min-width: max-content;
+}
+
+.heatmap-weekdays-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.heatmap-weekdays-spacer {
+  height: 22px;
+}
+
+.heatmap-weekdays {
+  display: grid;
+  grid-template-rows: repeat(7, 13px);
+  gap: 3px;
+}
+
+.heatmap-weekday {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  font-size: 9px;
+  line-height: 1;
+  color: #89958d;
+  user-select: none;
+}
+
+.heatmap-months {
+  display: flex;
+  gap: 16px;
+  min-width: max-content;
+}
+
+.heatmap-month {
+  display: flex;
+  flex-direction: column;
+}
+
+.heatmap-month h4 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #718077;
+  height: 14px;
+  line-height: 14px;
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-rows: repeat(7, 13px);
+  grid-auto-flow: column;
+  grid-auto-columns: 13px;
+  gap: 3px;
+}
+
+.heatmap-pad {
+  width: 13px;
+  height: 13px;
+  display: block;
+}
+
+.heatmap-cell {
+  width: 13px;
+  height: 13px;
+  border-radius: 2px;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  display: block;
+  background: var(--heatmap-level-0);
+  transition: transform 0.1s ease;
+}
+
+.heatmap-cell.level-0,
+.heatmap-cell[data-level="0"] {
+  background: var(--heatmap-level-0);
+}
+
+.heatmap-cell.level-1,
+.heatmap-cell[data-level="1"] {
+  background: var(--heatmap-level-1);
+}
+
+.heatmap-cell.level-2,
+.heatmap-cell[data-level="2"] {
+  background: var(--heatmap-level-2);
+}
+
+.heatmap-cell.level-3,
+.heatmap-cell[data-level="3"] {
+  background: var(--heatmap-level-3);
+}
+
+.heatmap-cell.level-4,
+.heatmap-cell[data-level="4"] {
+  background: var(--heatmap-level-4);
+}
+
+.heatmap-cell:hover,
+.heatmap-cell.hovered {
+  outline: 1.5px solid #17211b;
+  outline-offset: -1px;
+}
+
+.heatmap-cell.future {
+  background: transparent;
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.2;
+}
 
 @media (max-width: 760px) {
   .app-shell { padding: 20px 16px 48px; }

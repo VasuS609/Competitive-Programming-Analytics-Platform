@@ -13,12 +13,15 @@ function HomeDashboard({ handles }) {
   const totalAccepted = useTotalAccepted(handles, days);
   const heatmap = useHeatmap(handles, HEATMAP_MONTHS);
 
-  // Build stats hooks for all supported platforms only.
-  const statsByPlatform = SUPPORTED_PLATFORMS.map(({ id }) => ({
-    id,
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    ...useStats(handles[id], id),
-  }));
+  const codeforcesStats = useStats(handles.codeforces, "codeforces");
+  const leetcodeStats = useStats(handles.leetcode, "leetcode");
+  const githubStats = useStats(handles.github, "github");
+
+  const statsByPlatform = [
+    { id: "codeforces", ...codeforcesStats },
+    { id: "leetcode", ...leetcodeStats },
+    { id: "github", ...githubStats },
+  ];
 
   const totalSolved = statsByPlatform.reduce(
     (total, item) =>
@@ -49,11 +52,28 @@ function HomeDashboard({ handles }) {
             <span>Last {HEATMAP_MONTHS} months</span>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <RadarChart data={radarValues}>
-              <PolarGrid />
-              <PolarAngleAxis dataKey="subject" />
-              <PolarRadiusAxis allowDecimals={false} />
-              <Radar dataKey="value" stroke="#899e20" fill="#d6ef4f" fillOpacity={0.55} />
+            <RadarChart
+              data={radarValues}
+              margin={{ top: 20, right: 30, bottom: 20, left: 30 }}
+            >
+              <PolarGrid stroke="#e5e5e0" />
+              <PolarAngleAxis
+                dataKey="subject"
+                tick={{ fill: "#17211b", fontSize: 12, fontWeight: 600 }}
+              />
+              <PolarRadiusAxis
+                angle={90}
+                orientation="right"
+                stroke="#89958d"
+                allowDecimals={false}
+                tick={{ fontSize: 10, fill: "#89958d" }}
+              />
+              <Radar
+                dataKey="value"
+                stroke="#899e20"
+                fill="#d6ef4f"
+                fillOpacity={0.55}
+              />
               <Tooltip />
             </RadarChart>
           </ResponsiveContainer>

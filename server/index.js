@@ -64,19 +64,23 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
 });
 
 // --- Server startup ---
-const server = app.listen(PORT, () => {
-  console.log(`[server] Listening on port ${PORT}`);
-});
+let server;
+if (process.env.NODE_ENV !== "test") {
+  server = app.listen(PORT, () => {
+    console.log(`[server] Listening on port ${PORT}`);
+  });
 
-server.on("error", (err) => {
-  if (err.code === "EADDRINUSE") {
-    console.error(
-      `[startup] Port ${PORT} is already in use. Set a different PORT in .env or stop the conflicting process.`,
-    );
-  } else {
-    console.error("[startup] Server error:", err.message);
-  }
-  process.exit(1);
-});
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(
+        `[startup] Port ${PORT} is already in use. Set a different PORT in .env or stop the conflicting process.`,
+      );
+    } else {
+      console.error("[startup] Server error:", err.message);
+    }
+    process.exit(1);
+  });
+}
 
 module.exports = app; // exported for tests
+module.exports.server = server;

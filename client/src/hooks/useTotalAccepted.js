@@ -22,7 +22,7 @@ export function useTotalAccepted(handles, days = 7) {
       });
 
     return () => controller.abort();
-  }, [profileKey, handles]);
+  }, [profileKey, handles, days]);
 
   return {
     data: state.key === profileKey ? state.data : null,
