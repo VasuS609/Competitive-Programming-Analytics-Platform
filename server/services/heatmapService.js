@@ -104,7 +104,7 @@ function buildHeatmap(countsByPlatform, range, errors = {}) {
   };
 }
 async function cachedCounts(platform, handle, range, fetchers) {
-  const key = `${platform}:${handle.toLowerCase()}:`;
+  const key = `${platform}:${handle.toLowerCase()}:${range.from}:${range.to}:`;
   const hit = cache[key];
   if (hit && Date.now() < hit.expiresAt) return hit.counts;
   const counts = await fetchers[platform](handle, range);
@@ -138,6 +138,16 @@ function levelFor(count, max) {
   return Math.min(4, Math.max(1, Math.ceil((count / max) * 4)));
 }
 
+function invalidateHeatmapCache(platform, handle) {
+  if (platform) {
+    delete cache[`${platform}:${String(handle).trim().toLowerCase()}:`];
+    return;
+  }
+  for (const key of Object.keys(cache)) {
+    if (!handle || key.endsWith(`:${String(handle).trim().toLowerCase()}:`)) delete cache[key];
+  }
+}
+
 module.exports = {
   defaultFetchers,
   getHeatmap,
@@ -145,6 +155,7 @@ module.exports = {
   getRange,
   parseMonths,
   levelFor,
+  invalidateHeatmapCache,
   GROUPS,
   PLATFORMS,
 };

@@ -3,7 +3,14 @@ import { request } from "../api";
 
 export function useTotalAccepted(handles, days = 7) {
   const [state, setState] = useState({ data: null, error: null, key: "" });
+  const [revision, setRevision] = useState(0);
   const profileKey = `${JSON.stringify(handles || {})}:${days}`;
+
+  useEffect(() => {
+    const handleSync = () => setRevision((value) => value + 1);
+    window.addEventListener("platform-sync", handleSync);
+    return () => window.removeEventListener("platform-sync", handleSync);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -22,7 +29,7 @@ export function useTotalAccepted(handles, days = 7) {
       });
 
     return () => controller.abort();
-  }, [profileKey, handles, days]);
+  }, [profileKey, handles, days, revision]);
 
   return {
     data: state.key === profileKey ? state.data : null,

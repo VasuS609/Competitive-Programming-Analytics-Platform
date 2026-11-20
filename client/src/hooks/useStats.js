@@ -5,6 +5,7 @@ import { PLATFORM_IDS } from "../config/platforms";
 
 export function useStats(handle, platform) {
   const [state, setState] = useState({ data: null, error: null, key: "" });
+  const [revision, setRevision] = useState(0);
 
   const normalizedHandle = handle?.trim() || "";
   const requestKey = `${platform}:${normalizedHandle}`;
@@ -13,6 +14,13 @@ export function useStats(handle, platform) {
 
   useEffect(() => {
     if (!validRequest) return undefined;
+
+    const handleSync = (event) => {
+      if (event.detail?.platform !== platform || event.detail?.handle !== normalizedHandle) return;
+      invalidateCachedRequest(cacheKey);
+      setRevision((value) => value + 1);
+    };
+    window.addEventListener("platform-sync", handleSync);
 
     const request = getCachedRequest(
       cacheKey,
@@ -25,8 +33,11 @@ export function useStats(handle, platform) {
         if (error.name !== "AbortError") setState({ data: null, error, key: requestKey });
       });
 
-    return request.release;
-  }, [normalizedHandle, platform, requestKey, validRequest, cacheKey]);
+    return () => {
+      window.removeEventListener("platform-sync", handleSync);
+      request.release();
+    };
+  }, [normalizedHandle, platform, requestKey, validRequest, cacheKey, revision]);
 
   return {
     data: state.key === requestKey ? state.data : null,

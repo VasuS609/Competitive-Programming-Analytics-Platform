@@ -4,6 +4,17 @@ import { API_URL } from "../../../api";
 
 function RatingChart({ handle, platform, title }) {
   const [state, setState] = useState({ data: [], error: null, key: "" });
+  const [revision, setRevision] = useState(0);
+
+  useEffect(() => {
+    const handleSync = (event) => {
+      if (event.detail?.platform !== platform || event.detail?.handle !== (handle || "").trim()) return;
+      setRevision((value) => value + 1);
+    };
+    window.addEventListener("platform-sync", handleSync);
+    return () => window.removeEventListener("platform-sync", handleSync);
+  }, [handle, platform]);
+
   const requestKey = `${platform}:${handle || ""}`;
   const validRequest = Boolean(handle && platform);
 
@@ -25,7 +36,7 @@ function RatingChart({ handle, platform, title }) {
       });
 
     return () => controller.abort();
-  }, [handle, platform, requestKey, validRequest]);
+  }, [handle, platform, requestKey, validRequest, revision]);
 
   const loading = validRequest && state.key !== requestKey;
   const data = state.key === requestKey ? state.data : [];

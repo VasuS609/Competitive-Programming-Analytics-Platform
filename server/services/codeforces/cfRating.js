@@ -23,6 +23,7 @@ async function fetchRatingHistory(handle) {
     rank: contest.rank,
     oldRating: contest.oldRating,
     newRating: contest.newRating,
+    rating: contest.newRating,
     ratingChange: contest.newRating - contest.oldRating,
   }));
 }

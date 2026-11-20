@@ -61,3 +61,11 @@ export function invalidateCachedRequest(key) {
   if (!entry.settled) entry.controller.abort();
   requestCache.delete(key);
 }
+
+export function invalidateCachedRequestsByPrefix(prefix) {
+  for (const [key, entry] of requestCache.entries()) {
+    if (!key.startsWith(prefix)) continue;
+    if (!entry.settled) entry.controller.abort();
+    requestCache.delete(key);
+  }
+}
