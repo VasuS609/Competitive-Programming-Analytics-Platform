@@ -2,11 +2,10 @@ const router = require("express").Router();
 const { getCFAcceptedActivity } = require("../services/codeforces/cfTotalAccepted");
 const { getCFNotAcceptedActivity } = require("../services/codeforces/cfNotAccepted");
 const { getLCAcceptedActivity } = require("../services/leetcode/lcTotalAccepted");
-const { getLastNDates, toUTCDateString } = require("../utils/dates");
+const { getLastNDates} = require("../utils/dates");
+//todo : lc not accepted is absent
 
-// getTotalAcceptedActivity merges per-platform accepted/non-accepted counts
-// into a single daily array for the bar chart in HomeDashboard.
-// Response shape: { daily: [{ date, submissions, accepted, nonAccepted }] }
+
 async function getTotalAcceptedActivity(profiles, days) {
   const dates = getLastNDates(days);
   const byDate = Object.fromEntries(
@@ -38,8 +37,7 @@ async function getTotalAcceptedActivity(profiles, days) {
     );
   }
 
-  // GitHub does not have a classic accepted/non-accepted model; commits
-  // are counted as "accepted" for display purposes.
+  //-----------------------look required 
   if (profiles?.github?.trim()) {
     tasks.push(
       require("../services/github/githubService")

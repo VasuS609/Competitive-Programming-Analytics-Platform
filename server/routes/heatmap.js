@@ -7,6 +7,7 @@ router.get("/", async (req, res, next) => {
     // Validate each supplied platform handle; silently skip missing/invalid ones
     // so a single bad handle doesn't break heatmaps for the other platforms.
     const handles = {};
+
     for (const platform of PLATFORMS) {
       const raw = req.query[platform];
       if (!raw) continue;

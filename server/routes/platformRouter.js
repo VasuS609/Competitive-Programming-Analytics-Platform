@@ -9,8 +9,6 @@ function platformName(req) {
   return req.params.platform.toLowerCase();
 }
 
-// Stricter rate limiter for sync and routes that trigger upstream requests.
-// TODO: Replace with per-user authentication and per-token limits.
 const syncRateLimit = rateLimit({
   windowMs: 60 * 1000,
   limit: 5,
