@@ -140,7 +140,10 @@ function levelFor(count, max) {
 
 function invalidateHeatmapCache(platform, handle) {
   if (platform) {
-    delete cache[`${platform}:${String(handle).trim().toLowerCase()}:`];
+    const prefix = `${platform}:${String(handle).trim().toLowerCase()}:`;
+    for (const key of Object.keys(cache)) {
+      if (key.startsWith(prefix)) delete cache[key];
+    }
     return;
   }
   for (const key of Object.keys(cache)) {
