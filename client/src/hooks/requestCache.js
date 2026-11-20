@@ -22,20 +22,29 @@ export function getCachedRequest(key, url) {
   };
 
   entry.promise = fetch(url, { signal: controller.signal })
-    .then(async (response) => {
+
+    .then(async (response) => 
+      {
       const body = await response.json().catch(() => ({}));
+      
       if (!response.ok) throw new Error(body.error || "Request failed");
+
       entry.expiresAt = Date.now() + CACHE_TTL;
       return body;
     })
+
     .then((body) => {
       entry.settled = true;
       return body;
+
     })
+
     .catch((error) => {
+
       entry.settled = true;
       if (requestCache.get(key) === entry) requestCache.delete(key);
       throw error;
+      
     });
 
   requestCache.set(key, entry);

@@ -1,13 +1,11 @@
 const { toUTCDateString } = require("../utils/dates");
 
-// Supported groups and platforms.
-// CodeChef, GFG and AtCoder are temporarily removed; re-add them here and in
-// defaultFetchers below once their services return correct data.
 const GROUPS = {
   cp:  ["codeforces"],
   dsa: ["leetcode"],
   dev: ["github"],
 };
+
 const GROUP_OF = Object.fromEntries(
   Object.entries(GROUPS).flatMap(([group, platforms]) =>
     platforms.map((platform) => [platform, group]),

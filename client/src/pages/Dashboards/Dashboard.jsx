@@ -5,6 +5,7 @@ import { useProfile } from "../../context/useProfile";
 import { SUPPORTED_PLATFORMS } from "../../config/platforms";
 
 function ProfileForm({ activePlatform, handles, setActivePlatform, setHandle }) {
+ 
   const [draft, setDraft] = useState(handles[activePlatform] ?? "");
   const platform = SUPPORTED_PLATFORMS.find(({ id }) => id === activePlatform);
 
@@ -15,6 +16,7 @@ function ProfileForm({ activePlatform, handles, setActivePlatform, setHandle }) 
 
   return (
     <form className="handle-form" onSubmit={saveHandle}>
+
       <label className="field-label items-center">
         Platform
         <select
@@ -25,6 +27,7 @@ function ProfileForm({ activePlatform, handles, setActivePlatform, setHandle }) 
           {SUPPORTED_PLATFORMS.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
         </select>
       </label>
+
       <label className="field-label items-center">
         Username
         <input
@@ -34,6 +37,7 @@ function ProfileForm({ activePlatform, handles, setActivePlatform, setHandle }) 
           maxLength={40}
         />
       </label>
+      
       <button type="submit" className="primary-button">Save</button>
     </form>
   );

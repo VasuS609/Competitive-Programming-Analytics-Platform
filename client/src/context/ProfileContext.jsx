@@ -11,22 +11,29 @@ const DEFAULT_PROFILE = {
 };
 
 function validateProfile(value) {
+
   if (!value || typeof value !== "object") return DEFAULT_PROFILE;
   if (!PLATFORM_IDS.includes(value.activePlatform)) return DEFAULT_PROFILE;
   if (!value.handles || typeof value.handles !== "object") return DEFAULT_PROFILE;
 
   const handles = {};
+
   for (const platform of PLATFORM_IDS) {
+
     if (typeof value.handles[platform] !== "string") return DEFAULT_PROFILE;
+
     const handle = value.handles[platform].trim();
+
     if (handle.length > 40) return DEFAULT_PROFILE;
     handles[platform] = handle;
   }
 
   return {
+
     activePlatform: value.activePlatform,
     days: value.days === 30 ? 30 : 7,
     handles,
+
   };
 }
 
@@ -52,6 +59,7 @@ export function ProfileProvider({ children }) {
 
   // Always use the functional form to avoid stale-closure overwrites.
   const updateProfile = (patch) => {
+    
     setProfile((prev) => {
       const next = validateProfile({ ...prev, ...patch });
       writeProfile(next);

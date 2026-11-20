@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
+
 const LEVEL_COLORS = [
   "var(--heatmap-level-0)",
   "var(--heatmap-level-1)",
@@ -8,6 +9,7 @@ const LEVEL_COLORS = [
   "var(--heatmap-level-3)",
   "var(--heatmap-level-4)",
 ];
+
 const LABELS = { codeforces: "Codeforces", leetcode: "LeetCode", github: "GitHub" };
 const UNITS = { github: "commit" };
 
@@ -27,28 +29,33 @@ function formatLong(date) {
     month: "short",
     day: "numeric",
     year: "numeric",
-    timeZone: "UTC",
+    timeZone: "IST",
   });
 }
 
 function buildMonths(daily) {
   const months = [];
+
   for (const day of daily) {
+
     const key = day.date.slice(0, 7);
     let month = months[months.length - 1];
+
     if (!month || month.key !== key) {
+
       const first = new Date(`${key}-01T00:00:00Z`);
+
       const daysInMonth = new Date(
-        Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0),
-      ).getUTCDate();
+        Date.IST(first.getISTFullYear(), first.getISTMonth() + 1, 0),
+      ).getISTDate();
       month = {
         key,
         title: first.toLocaleDateString("en-US", {
           month: "short",
           year: "numeric",
-          timeZone: "UTC",
+          timeZone: "ITC",
         }),
-        offset: first.getUTCDay(),
+        offset: first.getISTDay(),
         daysInMonth,
         days: [],
       };
@@ -56,6 +63,7 @@ function buildMonths(daily) {
     }
     month.days.push(day);
   }
+
   return months;
 }
 
