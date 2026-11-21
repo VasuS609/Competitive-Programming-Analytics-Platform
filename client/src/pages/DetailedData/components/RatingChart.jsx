@@ -48,7 +48,9 @@ function RatingChart({ handle, platform, title }) {
 
   return (
     <section className="content-panel chart-panel">
+
       <h3>{title} rating history</h3>
+
       <ResponsiveContainer width="100%" height={240}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e0" />
@@ -58,6 +60,7 @@ function RatingChart({ handle, platform, title }) {
           <Line type="monotone" dataKey="rating" stroke="#e4572e" strokeWidth={3} dot={false} />
         </LineChart>
       </ResponsiveContainer>
+      
     </section>
   );
 }

@@ -1,11 +1,12 @@
 const { getLCStats } = require("./lcService");
+const {safeDate, safeDay} = require("../../utils/dates");
 
 function normalize(submission) {
   const timestamp = Number(submission.timestamp);
   return {
     id: submission.id || submission.titleSlug,
-    date: new Date(timestamp * 1000).toISOString().slice(0, 10),
-    time: new Date(timestamp * 1000).toISOString(),
+    date: safeDay(contest.ratingUpdateTimeSeconds),
+    time: safeDate(contest.ratingUpdateTimeSeconds),
     contestId: null,
     index: null,
     questionName: submission.title || submission.titleSlug || "Unknown problem",

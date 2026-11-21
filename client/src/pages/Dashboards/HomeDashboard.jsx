@@ -42,15 +42,20 @@ function HomeDashboard({ handles }) {
     <section>
       <div className="analytics-grid">
         <section className="content-panel heat-map-panel">
+
           <h3>Cross-platform activity</h3>
+
           {!heatmap.hasHandles ? <p className="muted">Add a profile handle to see your activity.</p> : heatmap.loading ? <p className="muted">Loading activity...</p> : heatmap.error ? <p className="muted">Activity unavailable: {heatmap.error.message}</p> : heatmap.data ? <ActivityHeatmap data={heatmap.data} /> : null}
           {failedPlatforms.length > 0 && <p className="muted heatmap-warning">Could not load: {failedPlatforms.join(", ")}</p>}
         </section>
+
         <section className="content-panel radar-panel">
+
           <div className="panel-heading">
             <h3>Direction</h3>
             <span>Last {HEATMAP_MONTHS} months</span>
           </div>
+
           <ResponsiveContainer width="100%" height={300}>
             <RadarChart
               data={radarValues}
@@ -75,8 +80,10 @@ function HomeDashboard({ handles }) {
                 fillOpacity={0.55}
               />
               <Tooltip />
+
             </RadarChart>
           </ResponsiveContainer>
+
         </section>
       </div>
 
@@ -94,6 +101,7 @@ function HomeDashboard({ handles }) {
             <p className="muted">Submissions unavailable: {totalAccepted.error.message}</p>
           ) : totalAccepted.data?.daily?.length ? (
             <ResponsiveContainer width="100%" height={240}>
+
               <BarChart data={totalAccepted.data.daily}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e0" />
                 <XAxis dataKey="date" stroke="#1f1f1f" fontSize={12} />
@@ -104,6 +112,7 @@ function HomeDashboard({ handles }) {
                 <Bar dataKey="accepted" name="Accepted" fill="#899e20" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="nonAccepted" name="Non-accepted" fill="#e4572e" radius={[4, 4, 0, 0]} />
               </BarChart>
+              
             </ResponsiveContainer>
           ) : (
             <p className="muted">No submission data is available for the selected profiles.</p>

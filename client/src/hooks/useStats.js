@@ -37,13 +37,15 @@ export function useStats(handle, platform) {
       window.removeEventListener("platform-sync", handleSync);
       request.release();
     };
+    
   }, [normalizedHandle, platform, requestKey, validRequest, cacheKey, revision]);
 
   return {
+
     data: state.key === requestKey ? state.data : null,
     loading: validRequest && state.key !== requestKey,
     error: state.key === requestKey ? state.error : null,
-    /** Call this after a sync to force a fresh fetch on the next render. */
+    
     invalidate: () => invalidateCachedRequest(cacheKey),
   };
 }

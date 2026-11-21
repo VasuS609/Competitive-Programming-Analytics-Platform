@@ -1,4 +1,5 @@
 const { fetchJson } = require("../../utils/httpClient");
+const {safeDate, safeDay} = require("../../utils/dates");
 
 async function fetchRatingHistory(handle) {
   const body = await fetchJson(
@@ -17,9 +18,10 @@ async function fetchRatingHistory(handle) {
   return (body.result || []).map((contest) => ({
     contestId: contest.contestId,
     contestName: contest.contestName,
-    // Date stored and returned as UTC.
-    date: new Date(contest.ratingUpdateTimeSeconds * 1000).toISOString().slice(0, 10),
-    time: new Date(contest.ratingUpdateTimeSeconds * 1000).toISOString(),
+    
+    date: safeDay(contest.ratingUpdateTimeSeconds),
+    time: safeDate(contest.ratingUpdateTimeSeconds),
+    
     rank: contest.rank,
     oldRating: contest.oldRating,
     newRating: contest.newRating,

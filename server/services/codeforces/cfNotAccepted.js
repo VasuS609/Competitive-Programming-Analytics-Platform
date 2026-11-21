@@ -1,17 +1,20 @@
 const { fetchSubmissions } = require("./cfTotalAccepted");
+const {safeDate, safeDay} = require("../../utils/dates");
 
 const IGNORED_VERDICTS = new Set(["COMPILATION_ERROR", "SKIPPED", "TESTING", "CHALLENGED"]);
 
 function toDate(seconds) {
-  return new Date(Number(seconds) * 1000).toISOString().slice(0, 10);
+  return safeDay(seconds);
 }
 
 function toSubmission(submission) {
   const problem = submission.problem || {};
   return {
     id: submission.id,
-    date: toDate(submission.creationTimeSeconds),
-    time: new Date(Number(submission.creationTimeSeconds) * 1000).toISOString(),
+
+    date: safeDay(contest.ratingUpdateTimeSeconds),
+    time: safeDate(contest.ratingUpdateTimeSeconds),
+
     contestId: problem.contestId ?? null,
     index: problem.index ?? null,
     questionName: problem.name || "Unknown problem",

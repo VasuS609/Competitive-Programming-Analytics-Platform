@@ -1,5 +1,5 @@
 const { fetchJson } = require("../../utils/httpClient");
-const { toUTCDateString } = require("../../utils/dates");
+const { toUTCDateString, safeDay, safeDate } = require("../../utils/dates");
 
 const CACHE_TTL = 10 * 60 * 1000;
 const cache = {};
@@ -31,8 +31,10 @@ function toSubmission(submission) {
   const problem = submission.problem || {};
   return {
     id: submission.id,
-    date: toUTCDateString(Number(submission.creationTimeSeconds) * 1000),
-    time: new Date(Number(submission.creationTimeSeconds) * 1000).toISOString(),
+    
+    date: safeDay(submission.creationTimeSeconds),
+    time: safeDate(submission.creationTimeSeconds),
+    
     contestId: problem.contestId ?? null,
     index: problem.index ?? null,
     questionName: problem.name || "Unknown problem",

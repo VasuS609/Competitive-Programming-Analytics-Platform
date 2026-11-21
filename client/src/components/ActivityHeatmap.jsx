@@ -29,7 +29,7 @@ function formatLong(date) {
     month: "short",
     day: "numeric",
     year: "numeric",
-    timeZone: "IST",
+    timeZone: "UTC",
   });
 }
 
@@ -46,8 +46,8 @@ function buildMonths(daily) {
       const first = new Date(`${key}-01T00:00:00Z`);
 
       const daysInMonth = new Date(
-        Date.IST(first.getISTFullYear(), first.getISTMonth() + 1, 0),
-      ).getISTDate();
+        Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0),
+      ).getUTCDate();
       month = {
         key,
         title: first.toLocaleDateString("en-US", {
@@ -55,7 +55,7 @@ function buildMonths(daily) {
           year: "numeric",
           timeZone: "ITC",
         }),
-        offset: first.getISTDay(),
+        offset: first.getUTCDay(),
         daysInMonth,
         days: [],
       };

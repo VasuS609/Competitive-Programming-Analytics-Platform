@@ -15,7 +15,9 @@ function SubmissionCalendar({ handle, platform, title, days = 7 }) {
 
   return (
     <section className="content-panel chart-panel">
+
       <h3>{title} activity, past {days} days</h3>
+
       <ResponsiveContainer width="100%" height={240}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e0" />

@@ -12,18 +12,24 @@ export function usePlatformSync(platform, handle) {
     setState({ data: null, error: null, loading: true });
     try {
       const data = await requestPlatformSync(platform, normalizedHandle);
+
       invalidateCachedRequest(`${platform}:${normalizedHandle}:stats`);
       invalidateCachedRequestsByPrefix("heatmap:");
       invalidateCachedRequestsByPrefix("total-accepted:");
       invalidateCachedRequestsByPrefix(`${platform}:${normalizedHandle}:`);
+
       window.dispatchEvent(new CustomEvent("platform-sync", {
         detail: { platform, handle: normalizedHandle },
       }));
+
       setState({ data, error: null, loading: false });
       return data;
+
     } catch (error) {
+
       setState({ data: null, error, loading: false });
       return null;
+      
     }
   }
 
