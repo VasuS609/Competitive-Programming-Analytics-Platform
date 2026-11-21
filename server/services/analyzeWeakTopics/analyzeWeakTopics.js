@@ -7,12 +7,16 @@ function analyzeWeakTopics(submissions, { window = 150, ignoreEventuallySolved =
         .filter((s) => s.problem && s.creationTimeSeconds)
         .sort((a, b) => b.creationTimeSeconds - a.creationTimeSeconds)
         .slice(0, window);
+
     const topics = {};
     const failures = [];
+
     for (const submission of recent) {
         const accepted = submission.verdict === "OK";
         const eventuallySolved = solved.has(problemKey(submission.problem));
         const failed = !accepted && !(ignoreEventuallySolved && eventuallySolved);
+
+
         if (failed) failures.push({
             name: submission.problem.name,
             verdict: submission.verdict,
@@ -22,6 +26,7 @@ function analyzeWeakTopics(submissions, { window = 150, ignoreEventuallySolved =
             url: problemUrl(submission.problem),
             date: toDate(submission.creationTimeSeconds * 1000),
         });
+
         for (const tag of submission.problem.tags || []) {
             const stats = topics[tag] || (topics[tag] = { tag, attempts: 0, failed: 0, accepted: 0 });
             stats.attempts += 1;
@@ -29,6 +34,7 @@ function analyzeWeakTopics(submissions, { window = 150, ignoreEventuallySolved =
             else if (failed) stats.failed += 1;
         }
     }
+    
     return {
         windowSize: recent.length,
         failedSubmissions: failures.length,

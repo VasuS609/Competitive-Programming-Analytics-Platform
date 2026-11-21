@@ -1,10 +1,8 @@
-// NOTE: GitHub's public Events API only exposes the last ~300 events across
-// up to 10 pages (100 per page). Private commits are NOT visible via this API
-// and are therefore NOT counted here.
 const { fetchJson } = require("../../utils/httpClient");
 const { getLastNDates, toUTCDateString } = require("../../utils/dates");
 
 const API_BASE = "https://api.github.com";
+
 const GITHUB_HEADERS = {
   Accept: "application/vnd.github+json",
   "X-GitHub-Api-Version": "2022-11-28",
@@ -12,7 +10,7 @@ const GITHUB_HEADERS = {
 
 const cache = {};
 const CACHE_TTL = 10 * 60 * 1000;
-// GitHub Events API caps at 10 pages × 100 events = 300 events (up to 90 days).
+
 const MAX_EVENT_PAGES = 10;
 const STATS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days for user stats card
 

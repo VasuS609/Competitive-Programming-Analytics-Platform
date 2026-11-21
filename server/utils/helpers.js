@@ -8,6 +8,7 @@ function parseSubmissionDays(value) {
 }
 
 function normalizeStats(platform, data, handle) {
+
   const source = data && typeof data === "object" ? data : {};
   const solved = parseCount(source.problemSolved ?? source.totalSolved);
   const rating = parseCount(source.rating ?? source.currentRating);
@@ -31,11 +32,13 @@ function normalizeStats(platform, data, handle) {
 }
 
 function parseCount(value) {
+
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   if (typeof value !== "string") return 0;
 
   const normalized = value.trim().replace(/,/g, "").toUpperCase();
   const match = normalized.match(/^(\d+(?:\.\d+)?)\s*([KMB])?$/);
+
   if (!match) return 0;
 
   const multiplier = { K: 1e3, M: 1e6, B: 1e9 }[match[2]] || 1;
@@ -43,11 +46,15 @@ function parseCount(value) {
 }
 
 function normalizeProblem(problem) {
+
   const source = problem && typeof problem === "object" ? problem : {};
   const tags = source.tags ?? source.topicTags ?? source.topics ?? [];
+
   const normalizedTags = Array.isArray(tags)
+
     ? tags.map((tag) => typeof tag === "string" ? tag : tag?.name).filter(Boolean)
     : String(tags).split(",").map((tag) => tag.trim()).filter(Boolean);
+
   const difficulty = source.difficulty ?? source.level ?? source.levelName ?? null;
   const ratingValue = source.rating ?? source.difficultyRating ?? null;
 
@@ -64,20 +71,32 @@ function normalizeProblem(problem) {
 }
 
 function buildProblemBreakdown(problems) {
+
   const breakdown = { byDifficulty: {}, byRating: {}, byTag: {} };
+
   for (const problem of problems) {
+
     if (problem.difficulty) {
       breakdown.byDifficulty[problem.difficulty] = (breakdown.byDifficulty[problem.difficulty] || 0) + 1;
     }
+
     if (problem.rating !== null) {
       const rating = String(problem.rating);
       breakdown.byRating[rating] = (breakdown.byRating[rating] || 0) + 1;
     }
+
     for (const tag of problem.tags) {
       breakdown.byTag[tag] = (breakdown.byTag[tag] || 0) + 1;
     }
+
   }
   return breakdown;
 }
 
-module.exports = { parseSubmissionDays, normalizeStats, normalizeProblem, parseCount };
+// "  Tourist " -> "tourist".  for cache keys and database lookups. and deduping
+
+function handleKey(handle) {
+  return String(handle ?? "").trim().toLowerCase();
+}
+
+module.exports = { handleKey, parseSubmissionDays, normalizeStats, normalizeProblem, parseCount };

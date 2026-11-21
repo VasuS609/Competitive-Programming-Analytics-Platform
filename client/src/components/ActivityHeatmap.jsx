@@ -53,7 +53,7 @@ function buildMonths(daily) {
         title: first.toLocaleDateString("en-US", {
           month: "short",
           year: "numeric",
-          timeZone: "ITC",
+          timeZone: "UTC",
         }),
         offset: first.getUTCDay(),
         daysInMonth,
@@ -69,6 +69,7 @@ function buildMonths(daily) {
 
 function ActivityHeatmap({ data }) {
   const [hovered, setHovered] = useState(null);
+
   const daily = data.daily;
   const months = useMemo(() => buildMonths(daily), [daily]);
   const max = useMemo(() => Math.max(1, ...daily.map((day) => day.total)), [daily]);
@@ -78,14 +79,19 @@ function ActivityHeatmap({ data }) {
 
   return (
     <div className="heatmap">
+
       <div className="heatmap-head">
         <h3>{months.length} month history</h3>
+
         <div className="heatmap-legend" aria-hidden="true">
+
           <span>Fewer events</span>
           <i style={{ background: `linear-gradient(90deg, ${LEVEL_COLORS.join(", ")})` }} />
           <span>More events</span>
         </div>
+
       </div>
+
       <div className="heatmap-scroll">
         <div className="heatmap-container">
           <div className="heatmap-weekdays-col" aria-hidden="true">
@@ -96,8 +102,10 @@ function ActivityHeatmap({ data }) {
               ))}
             </div>
           </div>
+
           <div className="heatmap-months">
             {months.map((month) => (
+
               <div className="heatmap-month" key={month.key}>
                 <h4>{month.title}</h4>
                 <div className="heatmap-grid">
@@ -127,7 +135,7 @@ function ActivityHeatmap({ data }) {
                   })}
                 </div>
               </div>
-            ))}
+            ))}hel
           </div>
         </div>
       </div>
