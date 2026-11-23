@@ -1,4 +1,7 @@
 const router = require("express").Router();
+
+const {parseSubmissionDays} = require("../utils/helpers");
+
 const { getCFAcceptedActivity } = require("../services/codeforces/cfTotalAccepted");
 const { getCFNotAcceptedActivity } = require("../services/codeforces/cfNotAccepted");
 const { getLCAcceptedActivity } = require("../services/leetcode/lcTotalAccepted");
@@ -24,7 +27,9 @@ async function getTotalAcceptedActivity(profiles, days) {
   const tasks = [];
 
   if (profiles?.codeforces?.trim()) {
+
     const handle = profiles.codeforces.trim();
+
     tasks.push(
       getCFAcceptedActivity(handle, days).then(merge).catch(() => {}),
       getCFNotAcceptedActivity(handle, days).then(merge).catch(() => {}),
@@ -39,12 +44,16 @@ async function getTotalAcceptedActivity(profiles, days) {
 
   //-----------------------look required 
   if (profiles?.github?.trim()) {
+
     tasks.push(
+
       require("../services/github/githubService")
         .getGithubDailyCommits(profiles.github.trim())
         .then((commitsByDay) => {
+
           for (const [date, count] of Object.entries(commitsByDay)) {
             if (!byDate[date]) continue;
+            
             byDate[date].submissions += count;
             byDate[date].accepted += count;
           }
@@ -60,10 +69,12 @@ async function getTotalAcceptedActivity(profiles, days) {
 
 router.post("/total-accepted", async (req, res, next) => {
   try {
-    const requestedDays = Number(req.body?.days);
-    const days = Number.isInteger(requestedDays) ? requestedDays : 7;
+    const days = parseSubmissionDays(req.body?.days);
+
     return res.json(await getTotalAcceptedActivity(req.body?.profiles, days));
+
   } catch (error) {
+    
     return next({
       status: error.status || 502,
       message: error.message || "Failed to fetch accepted activity",
