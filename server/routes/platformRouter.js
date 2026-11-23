@@ -4,6 +4,7 @@ const { getPlatformService } = require("../services/platformServices");
 const { parseSubmissionDays, normalizeStats } = require("../utils/helpers");
 const { syncPlatform } = require("../services/platformSyncService");
 const { validateHandleMiddleware } = require("../utils/validateHandle");
+const {handleKey} = require("../utils/helpers");
 
 function platformName(req) {
   return req.params.platform.toLowerCase();
@@ -21,19 +22,25 @@ const SYNC_COOLDOWN_MS = 60 * 1000;
 
 function checkSyncCooldown(req, res, next) {
   const key = `${platformName(req)}:${req.params.handle}`;
+
   const last = syncCooldown.get(key) || 0;
+
   if (Date.now() - last < SYNC_COOLDOWN_MS) {
     const retryAfter = Math.ceil((SYNC_COOLDOWN_MS - (Date.now() - last)) / 1000);
+
     return res.status(429).json({
       error: `This handle was synced recently. Please wait ${retryAfter}s before syncing again.`,
     });
+
   }
   next();
 }
 
 router.get("/:platform/stats/:handle", validateHandleMiddleware, async (req, res, next) => {
+
   const platform = platformName(req);
   const service = getPlatformService(platform, "stats");
+
   if (!service) return res.status(404).json({ error: `Platform '${platform}' is not supported` });
 
   try {
@@ -47,6 +54,7 @@ router.get("/:platform/stats/:handle", validateHandleMiddleware, async (req, res
 router.get("/:platform/submissions/:handle", validateHandleMiddleware, async (req, res, next) => {
   const platform = platformName(req);
   const service = getPlatformService(platform, "submissions");
+ 
   if (!service) return res.status(404).json({ error: `Platform '${platform}' is not supported` });
 
   try {
@@ -57,6 +65,7 @@ router.get("/:platform/submissions/:handle", validateHandleMiddleware, async (re
 });
 
 router.get("/:platform/rating/:handle", validateHandleMiddleware, async (req, res, next) => {
+  
   const platform = platformName(req);
   const service = getPlatformService(platform, "rating");
   if (!service) return res.status(404).json({ error: `Rating not supported for '${platform}'` });
@@ -69,6 +78,7 @@ router.get("/:platform/rating/:handle", validateHandleMiddleware, async (req, re
 });
 
 router.get("/:platform/activity/:handle", validateHandleMiddleware, async (req, res, next) => {
+  
   const platform = platformName(req);
   const service = getPlatformService(platform, "activity");
   if (!service) return res.status(404).json({ error: `Activity not supported for '${platform}'` });
@@ -81,23 +91,31 @@ router.get("/:platform/activity/:handle", validateHandleMiddleware, async (req, 
 });
 
 router.post(
+  
   "/:platform/sync/:handle",
+  
   syncRateLimit,
   validateHandleMiddleware,
   checkSyncCooldown,
+  
   async (req, res, next) => {
-    const key = `${platformName(req)}:${req.params.handle}`;
+
+    const key = `${platformName(req)}:${handleKey(req.params.handle)}`;
+
     try {
+
       const result = await syncPlatform(req.params.handle, req.params.platform);
       syncCooldown.set(key, Date.now());
       return res.json(result);
+
     } catch (error) {
+
       return next({
         status: error.status || 502,
         message: error.message || "Failed to sync platform data",
       });
     }
-  },
-);
+    }
+)
 
 module.exports = router;

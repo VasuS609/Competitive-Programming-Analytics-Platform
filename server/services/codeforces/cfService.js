@@ -2,6 +2,7 @@ const { getSolvedProblems, syncSolvedProblems } = require("../solvedProblemServi
 const { fetchJson } = require("../../utils/httpClient");
 const { toUTCDateString } = require("../../utils/dates");
 const { getCFAcceptedActivity } = require("./cfTotalAccepted");
+const {handleKey} = require("../../utils/helpers");
 
 const CACHE_TTL = 10 * 60 * 1000;
 
@@ -66,9 +67,12 @@ function analyzeWeakTopics(submissions) {
 
 async function getRawData(handle, { forceRefresh = false } = {}) {
   const cached = rawCache[handle];
+  rawCache[handle] = {data, expiresAt: Date.now() + CACHE_TTL};
+
   if (!forceRefresh && cached && Date.now() < cached.expiresAt) return cached.data;
 
   const h = encodeURIComponent(handle);
+
   const [status, info] = await Promise.all([
     fetchCFJson(`https://codeforces.com/api/user.status?handle=${h}`),
     fetchCFJson(`https://codeforces.com/api/user.info?handles=${h}`),
