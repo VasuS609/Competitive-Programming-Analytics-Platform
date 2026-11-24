@@ -1,65 +1,55 @@
-const { prepare, transaction } = require("../db");
-const {keyKey} = require("../utils/helpers");
 
-const selectProblems = prepare(`
-  SELECT platform, key, problem_id AS id, name, url, rating, tags, first_seen_at AS firstSeenAt
-  FROM solved_problems
-  WHERE platform = ? AND key = ?
-  ORDER BY first_seen_at DESC, name ASC
-`);
+const {handleKey} = require("../utils/helpers")
 
-const upsertProblem = prepare(`
-  INSERT INTO solved_problems
-    (platform, key, problem_id, name, url, rating, tags, first_seen_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  ON CONFLICT(platform, key, problem_id) DO UPDATE SET
-    name = excluded.name,
-    url = excluded.url,
-    rating = excluded.rating,
-    tags = excluded.tags
-`);
+const store = new Map();
 
-function getSolvedProblems(platform, key) {
-  return selectProblems.all(platform, key).map((problem) => ({
-    ...problem,
-    rating: problem.rating === null ? null : Number(problem.rating),
-    tags: parseTags(problem.tags),
-  }));
+function bucket(platform, handle){
+  const storeKey = `${platform}:${handleKey(handle)}`;
+
+  if(!store.has(storeKey)) store.set(storeKey, new Map());
+  return store.get(storeKey);
 }
 
-function parseTags(value) {
-  if (!value) return [];
-  try {
-    const tags = JSON.parse(value);
-    return Array.isArray(tags) ? tags : [];
-  } catch {
-    return [];
+function toRating(value){
+  if(value == null || value == undefined || value == "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function getSolvedProblem(platform, handle){
+
+  return [...bucket(platform, handle).values()]
+  .map((problem) => ({...problem, tags: [...problem.tag] }))
+  .sort(
+    (a, b) =>
+      b.firstSeenAt.localCompare(a.firstSeenAt) || a.name.localCompare(b.name),
+  );
+}
+
+function syncSolvedProblems(platform, handle, problems){
+  
+  const rows = Array.isArray(problems) ? problems : [];
+  const now = new Date().toISOString();
+  const saved = bucket(platform, handle);
+
+  for(const problem of rows){
+    if(!problem?.id || !problem.name) continue;
+
+    const id = String(problem.id);
+    const old = saved.get(id);
+
+    saved.set(id, {
+      platform,
+      handle: handleKey(handle),
+      id,
+      name: String(problem.name),
+      url: problem.url || null,
+      rating: toRating(problem.rating),
+      tags: Array.isArray(problem.tags) ? problems.tags : [],
+      firstSeenAt: old ? old.firstSeenAt : now
+    })
   }
 }
 
-function syncSolvedProblems(platform, key, problems) {
 
-  const rows = Array.isArray(problems) ? problems : [];
-  const now = new Date().toISOString();
-
-  const writeRows = transaction(() => {
-  
-    for (const problem of rows) {
-      if (!problem?.id || !problem?.name) continue;
-      upsertProblem.run(
-        platform,
-        key,
-        String(problem.id),
-        String(problem.name),
-        problem.url || null,
-        Number.isFinite(Number(problem.rating)) ? Number(problem.rating) : null,
-        JSON.stringify(Array.isArray(problem.tags) ? problem.tags : []),
-        
-      );
-    }
-  });
-
-  writeRows();
-}
-
-module.exports = { getSolvedProblems, syncSolvedProblems };
+module.exports = {getSolvedProblem, syncSolvedProblems};

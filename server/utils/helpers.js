@@ -101,3 +101,10 @@ function handleKey(handle) {
 }
 
 module.exports = { handleKey, parseSubmissionDays, normalizeStats, normalizeProblem, parseCount };
+
+
+
+/*
+need to update normalization too, normalization will not work for multiplatform data
+
+*/
