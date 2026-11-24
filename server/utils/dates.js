@@ -56,4 +56,4 @@ function safeDay(seconds) {
 }
 //----------------------------------------------
 
-module.exports = {...MIN_TS, getLastNDates, toUTCDateString, buildCalendar };
+module.exports = { MIN_TS, safeDate, safeDay, getLastNDates, toUTCDateString, buildCalendar };

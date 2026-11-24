@@ -3,9 +3,10 @@ const {safeDate, safeDay} = require("../../utils/dates");
 
 function normalize(submission) {
   const timestamp = Number(submission.timestamp);
+
   return {
     id: submission.id || submission.titleSlug,
-    date: safeDay(contest.ratingUpdateTimeSeconds),
+    date: safeDay(submission.timestamp),
     time: safeDate(contest.ratingUpdateTimeSeconds),
     contestId: null,
     index: null,

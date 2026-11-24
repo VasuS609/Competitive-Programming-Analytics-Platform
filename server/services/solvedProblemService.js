@@ -16,7 +16,7 @@ function toRating(value){
   return Number.isFinite(n) ? n : null;
 }
 
-function getSolvedProblem(platform, handle){
+function getSolvedProblems(platform, handle){
 
   return [...bucket(platform, handle).values()]
   .map((problem) => ({...problem, tags: [...problem.tag] }))
@@ -52,4 +52,4 @@ function syncSolvedProblems(platform, handle, problems){
 }
 
 
-module.exports = {getSolvedProblem, syncSolvedProblems};
+module.exports = { getSolvedProblems, syncSolvedProblems };

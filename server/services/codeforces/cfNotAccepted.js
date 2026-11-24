@@ -12,8 +12,8 @@ function toSubmission(submission) {
   return {
     id: submission.id,
 
-    date: safeDay(contest.ratingUpdateTimeSeconds),
-    time: safeDate(contest.ratingUpdateTimeSeconds),
+    date: safeDay(submission.creationTimeSeconds),
+    time: safeDate(submission.creationTimeSeconds),
 
     contestId: problem.contestId ?? null,
     index: problem.index ?? null,
@@ -30,6 +30,7 @@ function toSubmission(submission) {
 
 async function getCFNotAcceptedSubmissions(handle, days = 7) {
   const cutoff = Date.now() - days * 86400000;
+
   return (await fetchSubmissions(handle))
     .filter((submission) =>
       submission.problem &&
@@ -43,7 +44,9 @@ async function getCFNotAcceptedSubmissions(handle, days = 7) {
 async function getCFNotAcceptedActivity(handle, days = 7) {
   const rows = await getCFNotAcceptedSubmissions(handle, days);
   const byDate = {};
+
   for (const row of rows) {
+
     const entry = byDate[row.date] || { submissions: 0, accepted: 0, nonAccepted: 0 };
     entry.submissions += 1;
     entry.nonAccepted += 1;
