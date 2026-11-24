@@ -1,5 +1,6 @@
 const { LeetCode } = require("leetcode-query");
 const { getSolvedProblems, syncSolvedProblems } = require("../solvedProblemService");
+const {safeDay} = require("../../utils/helpers");
 
 let _lc;
 function getLCClient() {
@@ -153,7 +154,9 @@ async function getLCAcceptedActivity(handle, days = 7) {
             Number(submission.timestamp) * 1000 < cutoff
         ) continue;
 
-        const date = new Date(Number(submission.timestamp) * 1000).toISOString().slice(0, 10);
+        const date = safeDay(submission.timestamp);
+        if(!date) continue;
+        
         if (!acceptedByDate.has(date)) acceptedByDate.set(date, new Set());
         acceptedByDate.get(date).add(submission.titleSlug || submission.title);
     }
