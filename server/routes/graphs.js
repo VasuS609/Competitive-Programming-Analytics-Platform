@@ -18,7 +18,7 @@ const PLATFORM_LABELS = {
 async function getTotalAcceptedActivity(profiles, days){
     const dates = getLastNDates(days);
     const byDate = Object.fromEntries(
-      dates.map((date) => [date, {date, submission: 0, accepted:0, nonAccepted : 0}])
+      dates.map((date) => [date, {date, submissions: 0, accepted:0, nonAccepted : 0}])
     );
 
     const platformStatus = {}; //to remember which platform worked and which failed
