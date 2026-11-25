@@ -123,6 +123,7 @@ async function getCompleteUserData(handle) {
         submissionCalendar: matchedUser.submissionCalendar || "{}",
         problems: getSolvedProblems("leetcode", handle),
         recentSubmissions: recentSubmissionList || [],
+        recentSubmissionsAvailable: Array.isArray(recentSubmissionList),
         recentSubmissionList: recentSubmissionList || [],
         fetchedAt: new Date().toISOString(),
     };

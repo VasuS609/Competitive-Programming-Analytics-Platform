@@ -22,14 +22,14 @@ const DEFAULT_TIMEOUT_MS = 9000;
  *   Optional extra validation after a successful fetch (throws on bad data).
  * @returns {Promise<any>}
  */
-async function fetchJson(url, { headers = {}, timeoutMs = DEFAULT_TIMEOUT_MS, validate } = {}) {
+async function fetchJson(url, { headers = {}, method = "GET", body: requestBody, timeoutMs = DEFAULT_TIMEOUT_MS, validate } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   let response;
   let body;
   try {
-    response = await fetch(url, { headers, signal: controller.signal });
+    response = await fetch(url, { method, headers, body: requestBody, signal: controller.signal });
     body = await response.json();
   } catch (error) {
     if (controller.signal.aborted) {

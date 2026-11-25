@@ -46,6 +46,7 @@ app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 app.use("/api", require("./routes/platformRouter"));
 app.use("/api/graphs", require("./routes/graphs"));
 app.use("/api/heatmap", require("./routes/heatmap"));
+app.use("/api/metrics", require("./routes/metrics"));
 
 // --- 404 ---
 app.use((req, res) => res.status(404).json({ error: "Endpoint not found" }));
