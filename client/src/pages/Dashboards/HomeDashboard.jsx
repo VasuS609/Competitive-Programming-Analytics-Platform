@@ -37,6 +37,7 @@ function HomeDashboard({ handles }) {
     { subject: "Dev", value: heatmap.data?.totals.dev ?? 0 },
   ];
   const submissionStatus = totalAccepted.data?.platformStatus || {};
+  const submissionSources = SUPPORTED_PLATFORMS.filter(({ id }) => submissionStatus[id]?.ok);
   const failedSubmissionPlatforms = Object.keys(submissionStatus).filter((id) => !submissionStatus[id].ok);
   const failedPlatforms = Object.keys(heatmap.data?.errors || {});
 
@@ -93,7 +94,7 @@ function HomeDashboard({ handles }) {
         <section className="content-panel">
          
           <div className="panel-heading">
-            <h3>Submissions per day</h3>
+            <h3>Daily Codeforces and LeetCode submissions</h3>
             <span>Last {days} days</span>
           </div>
 
@@ -104,7 +105,7 @@ function HomeDashboard({ handles }) {
             <p className="muted">Loading submissions...</p>
           ) : totalAccepted.error ? (
             <p className="muted">Submissions unavailable: {totalAccepted.error.message}</p>
-          ) : Object.values(submissionStatus).some(({ ok }) => ok) ? (
+          ) : submissionSources.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
 
               <BarChart data={totalAccepted.data.daily}>
@@ -113,14 +114,16 @@ function HomeDashboard({ handles }) {
                 <YAxis allowDecimals={false} stroke="#1f1f1f" fontSize={12} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="submissions" name="Total submissions" fill="#2f80ed" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="submissions" name={`${submissionSources.map(({ label }) => label).join(" + ")} submissions`} fill="#2f80ed" radius={[4, 4, 0, 0]} />
                 {submissionStatus.codeforces?.ok && <Bar dataKey="accepted" name="Codeforces accepted" fill="#899e20" radius={[4, 4, 0, 0]} />}
                 {submissionStatus.codeforces?.ok && <Bar dataKey="nonAccepted" name="Codeforces non-accepted" fill="#e4572e" radius={[4, 4, 0, 0]} />}
               </BarChart>
               
             </ResponsiveContainer>
           ) : (
-            <p className="muted">No submission data is available for the selected profiles.</p>
+            <p className="muted">{handles.codeforces || handles.leetcode
+              ? "No submission data is available for the selected profiles."
+              : "Add a Codeforces or LeetCode handle to see daily submissions."}</p>
           )}
 
         </section>
