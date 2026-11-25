@@ -6,7 +6,6 @@ const store = new Map();
 function bucket(platform, handle){
   const storeKey = `${platform}:${handleKey(handle)}`;
 
-  if(!store.has(storeKey)) store.set(storeKey, new Map());
   return store.get(storeKey);
 }
 
@@ -18,11 +17,11 @@ function toRating(value){
 
 function getSolvedProblems(platform, handle){
 
-  return [...bucket(platform, handle).values()]
-  .map((problem) => ({...problem, tags: [...problem.tag] }))
+  return [...(bucket(platform, handle)?.values() || [])]
+  .map((problem) => ({...problem, tags: [...problem.tags] }))
   .sort(
     (a, b) =>
-      b.firstSeenAt.localCompare(a.firstSeenAt) || a.name.localCompare(b.name),
+      b.firstSeenAt.localeCompare(a.firstSeenAt) || a.name.localeCompare(b.name),
   );
 }
 
@@ -30,7 +29,11 @@ function syncSolvedProblems(platform, handle, problems){
   
   const rows = Array.isArray(problems) ? problems : [];
   const now = new Date().toISOString();
-  const saved = bucket(platform, handle);
+  const key = `${platform}:${handleKey(handle)}`;
+  const saved = bucket(platform, handle) || new Map();
+  store.delete(key);
+  store.set(key, saved);
+  if (store.size > 200) store.delete(store.keys().next().value);
 
   for(const problem of rows){
     if(!problem?.id || !problem.name) continue;
@@ -45,7 +48,7 @@ function syncSolvedProblems(platform, handle, problems){
       name: String(problem.name),
       url: problem.url || null,
       rating: toRating(problem.rating),
-      tags: Array.isArray(problem.tags) ? problems.tags : [],
+      tags: Array.isArray(problem.tags) ? [...problem.tags] : [],
       firstSeenAt: old ? old.firstSeenAt : now
     })
   }

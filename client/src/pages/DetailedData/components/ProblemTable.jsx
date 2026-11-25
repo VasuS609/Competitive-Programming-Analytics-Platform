@@ -4,7 +4,8 @@ function ProblemTable({ platform, problems, totalSolved, heading = "Solved probl
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const pageCount = Math.max(1, Math.ceil(problems.length / pageSize));
-    const visibleProblems = problems.slice((page - 1) * pageSize, page * pageSize);
+    const currentPage = Math.min(page, pageCount);
+    const visibleProblems = problems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     return <section className="table-panel">
 
@@ -20,7 +21,7 @@ function ProblemTable({ platform, problems, totalSolved, heading = "Solved probl
                         </div>
         {platform === "leetcode" && (
             <p className="muted coverage-note">
-                Showing {problems.length} of {totalSolved ?? problems.length} solved. The list grows every time you sync.
+                Showing {problems.length} of {totalSolved ?? problems.length} solved. Recent solves are cached in memory.
             </p>
         )}
         {!problems.length ? <p className="muted">Problem details are not available for this platform.</p> : <>
@@ -44,7 +45,7 @@ function ProblemTable({ platform, problems, totalSolved, heading = "Solved probl
                 );
             })}
             </div>
-            <div className="pagination"><button disabled={page === 1} onClick={() => setPage((current) => current - 1)}>Previous</button><span>Page {page} of {pageCount}</span><button disabled={page === pageCount} onClick={() => setPage((current) => current + 1)}>Next</button></div>
+            <div className="pagination"><button disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Previous</button><span>Page {currentPage} of {pageCount}</span><button disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>Next</button></div>
         </>}
     </section>;
 }

@@ -1,30 +1,24 @@
 const { fetchJson } = require("../../utils/httpClient");
-const { toUTCDateString, safeDay, safeDate } = require("../../utils/dates");
+const { getLastNDates, safeDay, safeDate } = require("../../utils/dates");
 
-const CACHE_TTL = 10 * 60 * 1000;
-const cache = {};
+const { handleKey } = require("../../utils/helpers");
+const { createTtlCache } = require("../../utils/ttlCache");
+const cache = createTtlCache();
 
-async function fetchSubmissions(handle, { forceRefresh = false } = {}) {
-  const key = String(handle).trim().toLowerCase();
-  if (!forceRefresh && cache[key] && Date.now() < cache[key].expiresAt) {
-    return cache[key].data;
-  }
-
-  const body = await fetchJson(
-    `https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}`,
-    {
-      validate(b) {
-        if (b.status !== "OK") {
-          const e = new Error(b.comment || "Codeforces API error");
-          e.status = 502;
-          throw e;
-        }
+function fetchSubmissions(handle, options) {
+  return cache.get(handleKey(handle), async () => {
+    const body = await fetchJson(
+      `https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}`,
+      {
+        validate(body) {
+          if (body?.status !== "OK" || !Array.isArray(body.result)) {
+            throw Object.assign(new Error(body?.comment || "Invalid Codeforces submission response"), { status: 502 });
+          }
+        },
       },
-    },
-  );
-
-  cache[key] = { data: body.result || [], expiresAt: Date.now() + CACHE_TTL };
-  return cache[key].data;
+    );
+    return body.result;
+  }, options);
 }
 
 function toSubmission(submission) {
@@ -49,13 +43,13 @@ function toSubmission(submission) {
 }
 
 async function getCFAcceptedSubmissions(handle, days = 7, opts = {}) {
-  const cutoff = Date.now() - days * 86400000;
+  const dates = new Set(getLastNDates(days));
   return (await fetchSubmissions(handle, opts))
     .filter(
       (submission) =>
         submission.verdict === "OK" &&
         submission.problem &&
-        Number(submission.creationTimeSeconds) * 1000 >= cutoff,
+        dates.has(safeDay(submission.creationTimeSeconds)),
     )
     .map(toSubmission);
 }

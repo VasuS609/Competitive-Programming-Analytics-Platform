@@ -24,14 +24,14 @@ function toUTCDateString(value) {
     ) return null;
     return date.toISOString().slice(0, 10);
   }
-  const date = value instanceof Date ? new Date(value) : new Date(value);
+  if (value == null) return null;
+  const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString().slice(0, 10);
 }
 
 function buildCalendar(counts, days = 7) {
-  const fullDates = getLastNDates(30);
-  return fullDates.slice(-days).map((date) => ({
+  return getLastNDates(days).map((date) => ({
     date,
     count: Number(counts[date]) || 0,
   }));

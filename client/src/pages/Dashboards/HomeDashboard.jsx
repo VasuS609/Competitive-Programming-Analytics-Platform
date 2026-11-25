@@ -36,6 +36,8 @@ function HomeDashboard({ handles }) {
     { subject: "DSA", value: heatmap.data?.totals.dsa ?? 0 },
     { subject: "Dev", value: heatmap.data?.totals.dev ?? 0 },
   ];
+  const submissionStatus = totalAccepted.data?.platformStatus || {};
+  const failedSubmissionPlatforms = Object.keys(submissionStatus).filter((id) => !submissionStatus[id].ok);
   const failedPlatforms = Object.keys(heatmap.data?.errors || {});
 
   return (
@@ -95,11 +97,14 @@ function HomeDashboard({ handles }) {
             <span>Last {days} days</span>
           </div>
 
+          {failedSubmissionPlatforms.length > 0 && (
+            <p className="muted">Submissions unavailable for {failedSubmissionPlatforms.map((id) => SUPPORTED_PLATFORMS.find((platform) => platform.id === id)?.label).join(", ")}.</p>
+          )}
           {totalAccepted.loading ? (
             <p className="muted">Loading submissions...</p>
           ) : totalAccepted.error ? (
             <p className="muted">Submissions unavailable: {totalAccepted.error.message}</p>
-          ) : totalAccepted.data?.daily?.length ? (
+          ) : Object.values(submissionStatus).some(({ ok }) => ok) ? (
             <ResponsiveContainer width="100%" height={240}>
 
               <BarChart data={totalAccepted.data.daily}>
@@ -109,8 +114,8 @@ function HomeDashboard({ handles }) {
                 <Tooltip />
                 <Legend />
                 <Bar dataKey="submissions" name="Total submissions" fill="#2f80ed" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="accepted" name="Accepted" fill="#899e20" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="nonAccepted" name="Non-accepted" fill="#e4572e" radius={[4, 4, 0, 0]} />
+                {submissionStatus.codeforces?.ok && <Bar dataKey="accepted" name="Codeforces accepted" fill="#899e20" radius={[4, 4, 0, 0]} />}
+                {submissionStatus.codeforces?.ok && <Bar dataKey="nonAccepted" name="Codeforces non-accepted" fill="#e4572e" radius={[4, 4, 0, 0]} />}
               </BarChart>
               
             </ResponsiveContainer>
@@ -141,7 +146,7 @@ function HomeDashboard({ handles }) {
             <h3>Current ratings</h3>
             <span>Live data</span>
           </div>
-          {statsByPlatform.map((item) => (
+          {statsByPlatform.filter(({ id }) => id !== "github").map((item) => (
            
             <div className="rating-row" key={item.id}>
               <span>{SUPPORTED_PLATFORMS.find(({ id }) => id === item.id)?.label}</span>

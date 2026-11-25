@@ -1,5 +1,5 @@
 const { getLCStats } = require("./lcService");
-const {safeDate, safeDay} = require("../../utils/dates");
+const { getLastNDates, safeDate, safeDay } = require("../../utils/dates");
 
 function normalize(submission) {
   const timestamp = Number(submission.timestamp);
@@ -7,7 +7,7 @@ function normalize(submission) {
   return {
     id: submission.id || submission.titleSlug,
     date: safeDay(submission.timestamp),
-    time: safeDate(contest.ratingUpdateTimeSeconds),
+    time: safeDate(timestamp),
     contestId: null,
     index: null,
     questionName: submission.title || submission.titleSlug || "Unknown problem",
@@ -20,11 +20,11 @@ function normalize(submission) {
 }
 
 async function getLCNotAcceptedSubmissions(handle, days = 7) {
-  const cutoff = Date.now() - days * 86400000;
+  const dates = new Set(getLastNDates(days));
   const stats = await getLCStats(handle);
   return (stats.recentSubmissions || [])
     .filter((submission) => submission.statusDisplay !== "Accepted" &&
-      Number(submission.timestamp) * 1000 >= cutoff)
+      dates.has(safeDay(submission.timestamp)))
     .map(normalize);
 }
 

@@ -1,13 +1,11 @@
+const { createTtlCache } = require("../../utils/ttlCache");
 const { getSolvedProblems, syncSolvedProblems } = require("../solvedProblemService");
 const { fetchJson } = require("../../utils/httpClient");
-const { toUTCDateString } = require("../../utils/dates");
-const { getCFAcceptedActivity } = require("./cfTotalAccepted");
-const {handleKey} = require("../../utils/helpers");
+const { safeDay } = require("../../utils/dates");
+const { fetchSubmissions, getCFAcceptedActivity } = require("./cfTotalAccepted");
+const { handleKey, classifyVerdict } = require("../../utils/helpers");
 
-const CACHE_TTL = 10 * 60 * 1000;
-
-const rawCache = {};
-const statsCache = {};
+const statsCache = createTtlCache();
 
 function validateCFResponse(body) {
   if (body.status !== "OK") {
@@ -44,7 +42,8 @@ function getFirstSolves(submissions) {
 function buildSolveActivity(firstSolves) {
   const daily = {};
   for (const submission of firstSolves.values()) {
-    const date = toUTCDateString(submission.creationTimeSeconds * 1000);
+    const date = safeDay(submission.creationTimeSeconds);
+    if (!date) continue;
     daily[date] = (daily[date] || 0) + 1;
   }
   return {
@@ -56,7 +55,7 @@ function buildSolveActivity(firstSolves) {
 function analyzeWeakTopics(submissions) {
   const stats = {};
   for (const submission of submissions) {
-    if (!submission.problem || submission.verdict === "OK") continue;
+    if (!submission.problem || classifyVerdict(submission.verdict) !== "notAccepted") continue;
     for (const tag of submission.problem.tags || []) {
       const row = stats[tag] || (stats[tag] = { tag, failed: 0 });
       row.failed += 1;
@@ -66,21 +65,14 @@ function analyzeWeakTopics(submissions) {
 }
 
 async function getRawData(handle, { forceRefresh = false } = {}) {
-  const cached = rawCache[handle];
-  rawCache[handle] = {data, expiresAt: Date.now() + CACHE_TTL};
-
-  if (!forceRefresh && cached && Date.now() < cached.expiresAt) return cached.data;
-
   const h = encodeURIComponent(handle);
 
-  const [status, info] = await Promise.all([
-    fetchCFJson(`https://codeforces.com/api/user.status?handle=${h}`),
+  const [submissions, info] = await Promise.all([
+    fetchSubmissions(handle, { forceRefresh }),
     fetchCFJson(`https://codeforces.com/api/user.info?handles=${h}`),
   ]);
 
-  const data = { submissions: status.result, profile: info.result[0] };
-  rawCache[handle] = { data, expiresAt: Date.now() + CACHE_TTL };
-  return data;
+  return { submissions, profile: info.result[0] };
 }
 
 async function fetchFromCF(handle, opts = {}) {
@@ -109,15 +101,8 @@ async function fetchFromCF(handle, opts = {}) {
   };
 }
 
-async function getCFStats(handle, { forceRefresh = false } = {}) {
-  const cached = statsCache[handle];
-  if (!forceRefresh && cached && Date.now() < cached.expiresAt) {
-    return cached.data;
-  }
-
-  const data = await fetchFromCF(handle, { forceRefresh });
-  statsCache[handle] = { data, expiresAt: Date.now() + CACHE_TTL };
-  return data;
+function getCFStats(handle, options) {
+  return statsCache.get(handleKey(handle), () => fetchFromCF(handle, options), options);
 }
 
 async function run(handle) {

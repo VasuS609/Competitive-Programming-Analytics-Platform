@@ -1,113 +1,46 @@
 const router = require("express").Router();
+const { parseSubmissionDays } = require("../utils/helpers");
+const { getLastNDates } = require("../utils/dates");
+const { validateHandle } = require("../utils/validateHandle");
+const { getCodeforcesActivity, getLeetcodeActivity } = require("../services/activityService");
 
-const {parseSubmissionDays} = require("../utils/helpers");
+const activitySources = {
+  codeforces: getCodeforcesActivity,
+  leetcode: getLeetcodeActivity,
+};
 
-const { getCFAcceptedActivity } = require("../services/codeforces/cfTotalAccepted");
-const { getCFNotAcceptedActivity } = require("../services/codeforces/cfNotAccepted");
-const { getLCAcceptedActivity } = require("../services/leetcode/lcTotalAccepted");
-const { getLastNDates} = require("../utils/dates");
-//todo : lc not accepted is absent
+router.post("/total-accepted", async (req, res) => {
+  const days = parseSubmissionDays(req.body?.days);
+  const profiles = req.body?.profiles ?? {};
+  const dates = getLastNDates(days);
+  const daily = dates.map((date) => ({ date, submissions: 0, accepted: null, nonAccepted: null }));
+  const byDate = new Map(daily.map((row) => [row.date, row]));
+  const handles = Object.entries(activitySources).flatMap(([platform, fetchActivity]) => {
+    const handle = profiles[platform];
+    if (handle === "" || handle == null) return [];
+    return [{ platform, handle: validateHandle(handle), fetchActivity }];
+  });
 
-const PLATFORM_LABELS = {
-    codeforces: "Codeforces",
-    leetcode: "Leetcode",
-    github: "Github"
-  };
-
-  
-async function getTotalAcceptedActivity(profiles, days){
-    const dates = getLastNDates(days);
-    const byDate = Object.fromEntries(
-      dates.map((date) => [date, {date, submissions: 0, accepted:0, nonAccepted : 0}])
-    );
-
-    const platformStatus = {}; //to remember which platform worked and which failed
-
-    function track(platform, promise){
-      return promise.then(
-        () => {
-          
-          if(!platformStatus[platform]) platformStatus[platform] = {ok:true};
-        },
-
-        (error) =>{
-          console.error(`[graphs] ${platform} failed:`, error?.message);
-          platformStatus[platform] = {
-            ok : false,
-            error : `${PLATFORM_LABELS[platform]} is not responding`,
-          };
-        },
-      )
-    }
-
-function merge(rows) {
-    
-  for (const row of rows) {
-       if (!byDate[row.date]) continue;
-        byDate[row.date].submissions += (row.submissions || 0);
-        byDate[row.date].accepted += (row.accepted || 0);
-        byDate[row.date].nonAccepted += (row.nonAccepted || 0);
+  const statuses = await Promise.all(handles.map(async ({ platform, handle, fetchActivity }) => {
+    try {
+      const activity = await fetchActivity(handle, days);
+      for (const row of activity.daily) {
+        const day = byDate.get(row.date);
+        if (!day) continue;
+        day.submissions += row.submissions;
+        if (platform === "codeforces") {
+          day.accepted = row.acceptedSubmissions;
+          day.nonAccepted = row.nonAcceptedSubmissions;
+        }
       }
+      return [platform, { ok: true }];
+    } catch (error) {
+      console.error(`[graphs] ${platform} failed:`, error.message);
+      return [platform, { ok: false, error: "Activity is unavailable" }];
     }
+  }));
 
-    const tasks = [];
-
-    if (profiles?.codeforces?.trim()) {
-      const handle = profiles.codeforces.trim();
-
-      tasks.push(
-          track("codeforces", getCFAcceptedActivity(handle, days).then(merge)),
-      track("codeforces", getCFNotAcceptedActivity(handle, days).then(merge)),
-      );
-    }
-
-    if (profiles?.leetcode?.trim()) {
-      tasks.push(
-       track("leetcode", getLCAcceptedActivity(profiles.leetcode.trim(), days).then(merge)),
-      );
-    }
-
-  if (profiles?.github?.trim()) {
-    tasks.push(
-      track(
-    
-        "github",
-    
-        require("../services/github/githubService")
-          .getGithubDailyCommits(profiles.github.trim())
-          .then((commitsByDay) => {
-    
-            for (const [date, count] of Object.entries(commitsByDay)) {
-              if (!byDate[date]) continue;
-              byDate[date].submissions += count;
-              byDate[date].accepted += count;
-            }
-    
-          }),
-      ),
-    );
-  }
-
-  await Promise.all(tasks);
-
-  return { daily: dates.map((date) => byDate[date]), platformStatus };
-
-
-}
-
-router.post("/total-accepted", async (req, res, next) => {
-  try {
-    const days = parseSubmissionDays(req.body?.days);
-
-    return res.json(await getTotalAcceptedActivity(req.body?.profiles, days));
-
-  } catch (error) {
-    
-    return next({
-      status: error.status || 502,
-      message: error.message || "Failed to fetch accepted activity",
-    });
-  }
+  res.json({ daily, platformStatus: Object.fromEntries(statuses) });
 });
 
 module.exports = router;

@@ -8,11 +8,11 @@
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "test": "npm test --prefix server",
     "postinstall": "npm run install:all",
-    "install:all": "concurrently \"npm --prefix server install\" \"npm --prefix client install\""
+    "install:all": "npm --prefix server ci && npm --prefix client ci"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vasus609/Competitive-Programming-Dashboard.git"
+    "url": "git+https://github.com/VasuS609/Competitive-Programming-Analytics-Platform.git"
   },
   "keywords": [
     "competitive-programming",
@@ -21,10 +21,13 @@
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/vasus609/Competitive-Programming-Dashboard/issues"
+    "url": "https://github.com/VasuS609/Competitive-Programming-Analytics-Platform/issues"
   },
-  "homepage": "https://github.com/vasus609/Competitive-Programming-Dashboard#readme",
+  "homepage": "https://github.com/VasuS609/Competitive-Programming-Analytics-Platform#readme",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

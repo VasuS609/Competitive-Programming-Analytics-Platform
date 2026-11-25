@@ -27,7 +27,7 @@ function DetailedDashboard({ handle, title, platform }) {
 
     const details = platform === "github"
         ? [
-            ["Commits (30d)", data.totalCommits ?? 0],
+            ["Public pushes (30d)", data.totalPushes ?? 0],
             ["Repositories", data.publicRepos ?? data.repositories?.length ?? 0],
             ["Followers", data.followers ?? 0],
             ["Following", data.following ?? 0],
@@ -48,11 +48,11 @@ function DetailedDashboard({ handle, title, platform }) {
                     <h2>{displayName}</h2>
                     <span className="platform-badge">{platform}</span>
                     <button type="button" onClick={sync} disabled={syncing} className="tab-button">
-                        {syncing ? "Syncing..." : "Sync solved problems"}
+                        {syncing ? "Refreshing..." : "Refresh profile"}
                     </button>
             </div>
             {syncError && <p className="text-sm text-red-600">Sync failed: {syncError.message}</p>}
-            {syncData && <p className="text-sm text-ink/60">Synced {syncData.syncedCount} solved problems.</p>}
+            {syncData && <p className="text-sm text-ink/60">Updated {syncData.syncedCount} {platform === "github" ? "repositories" : "solved problems"}.</p>}
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 {details.map(
@@ -66,7 +66,7 @@ function DetailedDashboard({ handle, title, platform }) {
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
-                <RatingChart handle={handle} platform={platform} title={title} />
+                {platform !== "github" && <RatingChart handle={handle} platform={platform} title={title} />}
 
                 <SubmissionCalendar handle={handle} platform={platform} title={title} days={days} />
 
@@ -75,14 +75,14 @@ function DetailedDashboard({ handle, title, platform }) {
             {platform === "github" && (
                 <section className="content-panel">
                     <div className="panel-heading">
-                        <h3>GitHub commits per day</h3>
+                        <h3>GitHub public pushes per day</h3>
                         <span>Last 30 days</span>
                     </div>
                     <div className="problem-list">
-                        {Object.entries(data.commitsByDay || {}).map(([date, commits]) => (
+                        {Object.entries(data.pushesByDay || {}).map(([date, pushes]) => (
                             <div className="problem-row" key={date}>
                                 <span>{date}</span>
-                                <small>{commits} {commits === 1 ? "commit" : "commits"}</small>
+                                <small>{pushes} {pushes === 1 ? "push" : "pushes"}</small>
                             </div>
                         ))}
                     </div>
@@ -93,7 +93,7 @@ function DetailedDashboard({ handle, title, platform }) {
                 platform={platform}
                 problems={data.problems || []}
                 totalSolved={data.totalSolved ?? data.problemSolved}
-                heading={platform === "leetcode" ? "Recently solved problems" : "Solved problems"}
+                heading={{ github: "Repositories", leetcode: "Recently solved problems" }[platform] || "Solved problems"}
             />
 
         </section>

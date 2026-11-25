@@ -8,66 +8,44 @@ const GITHUB_HEADERS = {
   "X-GitHub-Api-Version": "2022-11-28",
 };
 
-const cache = {};
-const CACHE_TTL = 10 * 60 * 1000;
-
-const MAX_EVENT_PAGES = 10;
-const STATS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days for user stats card
+const { handleKey } = require("../../utils/helpers");
+const { createTtlCache } = require("../../utils/ttlCache");
+const statsCache = createTtlCache();
+const pushCache = createTtlCache();
+const MAX_EVENT_PAGES = 3;
 
 async function fetchGithub(path) {
   return fetchJson(`${API_BASE}${path}`, { headers: GITHUB_HEADERS });
 }
 
-function emptyDailyActivity() {
-  return Object.fromEntries(getLastNDates(30).map((date) => [date, 0]));
+function getGithubDailyPushes(handle, options) {
+  return pushCache.get(handleKey(handle), async () => {
+    const counts = {};
+    for (let page = 1; page <= MAX_EVENT_PAGES; page += 1) {
+      const events = await fetchGithub(
+        `/users/${encodeURIComponent(handle)}/events/public?per_page=100&page=${page}`,
+      );
+      if (!Array.isArray(events)) throw new Error("Invalid GitHub events response");
+      for (const event of events) {
+        if (event.type !== "PushEvent" || !event.created_at) continue;
+        const date = toUTCDateString(event.created_at);
+        if (date) counts[date] = (counts[date] || 0) + 1;
+      }
+      if (events.length < 100) break;
+    }
+    return counts;
+  }, options);
 }
 
-function pushCommitCount(event) {
-  const payload = event.payload || {};
-  const count = payload.distinct_size ?? payload.size ?? payload.commits?.length;
-  return Number.isFinite(Number(count)) ? Number(count) : 1;
-}
-
-async function getGithubData(handle, { forceRefresh = false } = {}) {
-  const key = String(handle).trim().toLowerCase();
-  const cached = cache[key];
-  if (!forceRefresh && cached && Date.now() < cached.expiresAt) return cached.data;
-
-  const cutoff = Date.now() - STATS_WINDOW_MS;
-
-  // Fetch profile and repos in parallel, then paginate events sequentially.
-  const [profile, repositories] = await Promise.all([
-    fetchGithub(`/users/${encodeURIComponent(handle)}`),
-    fetchGithub(`/users/${encodeURIComponent(handle)}/repos?per_page=100&sort=updated`),
+async function getGithubData(handle, options) {
+  const userPath = `/users/${encodeURIComponent(handle)}`;
+  const [profile, repositories, counts] = await Promise.all([
+    fetchGithub(userPath),
+    fetchGithub(`${userPath}/repos?per_page=100&sort=updated`),
+    getGithubDailyPushes(handle, options),
   ]);
-
-  const commitsByDay = emptyDailyActivity();
-  let totalCommits = 0;
-  let allEvents = [];
-
-  for (let page = 1; page <= MAX_EVENT_PAGES; page += 1) {
-    const events = await fetchGithub(
-      `/users/${encodeURIComponent(handle)}/events/public?per_page=100&page=${page}`,
-    );
-    if (!Array.isArray(events) || !events.length) break;
-
-    const oldest = events[events.length - 1];
-    const oldestMs = oldest?.created_at ? Date.parse(oldest.created_at) : 0;
-    allEvents = allEvents.concat(events);
-    if (oldestMs > 0 && oldestMs < cutoff) break;
-    if (events.length < 100) break;
-  }
-
-  for (const event of allEvents) {
-    if (!event.created_at) continue;
-    if (Date.parse(event.created_at) < cutoff) continue;
-    const date = toUTCDateString(event.created_at);
-    if (!(date in commitsByDay)) continue;
-    if (event.type !== "PushEvent") continue;
-    const commits = pushCommitCount(event);
-    commitsByDay[date] += commits;
-    totalCommits += commits;
-  }
+  const pushesByDay = Object.fromEntries(getLastNDates(30).map((date) => [date, counts[date] || 0]));
+  const totalPushes = Object.values(pushesByDay).reduce((total, count) => total + count, 0);
 
   const normalizedRepositories = (Array.isArray(repositories) ? repositories : []).map((repo) => ({
     id: repo.id,
@@ -94,70 +72,24 @@ async function getGithubData(handle, { forceRefresh = false } = {}) {
     rating: 0,
     currentRating: 0,
     repositories: normalizedRepositories,
-    totalCommits,
-    commitsByDay,
-    recentActivity: allEvents,
+    totalPushes,
+    pushesByDay,
     problems: normalizedRepositories,
   };
 
-  cache[key] = { data, expiresAt: Date.now() + CACHE_TTL };
   return data;
 }
 
-async function getGithubStats(handle, opts = {}) {
-  return getGithubData(handle, opts);
+function getGithubStats(handle, options) {
+  return statsCache.get(handleKey(handle), () => getGithubData(handle, options), options);
 }
 
 async function getGithubSubmissionCalendar(handle, days = 7) {
-  const stats = await getGithubData(handle);
+  const counts = await getGithubDailyPushes(handle);
   return getLastNDates(days).map((date) => ({
     date,
-    count: stats.commitsByDay[date] || 0,
+    count: counts[date] || 0,
   }));
 }
 
-const dailyCommitCache = {};
-async function getGithubDailyCommits(handle, range, opts = {}) {
-  let forceRefresh = false;
-  if (range && typeof range.forceRefresh === "boolean") {
-    forceRefresh = range.forceRefresh;
-    range = undefined;
-  } else if (opts && typeof opts.forceRefresh === "boolean") {
-    forceRefresh = opts.forceRefresh;
-  }
-
-  const key = String(handle).trim().toLowerCase();
-  const cached = dailyCommitCache[key];
-  if (!forceRefresh && cached && Date.now() < cached.expiresAt) return cached.counts;
-
-  // Window matches the heatmap/radar range (e.g. 3 months / ~90 days)
-  const cutoffMs = range?.from
-    ? Date.parse(`${range.from}T00:00:00Z`)
-    : Date.now() - 90 * 24 * 60 * 60 * 1000;
-
-  const counts = {};
-  for (let page = 1; page <= MAX_EVENT_PAGES; page += 1) {
-    const events = await fetchGithub(
-      `/users/${encodeURIComponent(handle)}/events/public?per_page=100&page=${page}`,
-    );
-    if (!Array.isArray(events) || !events.length) break;
-
-    for (const event of events) {
-      if (event.type !== "PushEvent" || !event.created_at) continue;
-      const eventTime = Date.parse(event.created_at);
-      if (eventTime < cutoffMs) continue;
-      const date = toUTCDateString(event.created_at);
-      if (date) counts[date] = (counts[date] || 0) + pushCommitCount(event);
-    }
-
-    const oldest = events[events.length - 1];
-    const oldestMs = oldest?.created_at ? Date.parse(oldest.created_at) : 0;
-    if (oldestMs > 0 && oldestMs < cutoffMs) break;
-    if (events.length < 100) break;
-  }
-
-  dailyCommitCache[key] = { counts, expiresAt: Date.now() + CACHE_TTL };
-  return counts;
-}
-
-module.exports = { getGithubStats, getGithubSubmissionCalendar, getGithubDailyCommits };
+module.exports = { getGithubStats, getGithubSubmissionCalendar, getGithubDailyPushes };

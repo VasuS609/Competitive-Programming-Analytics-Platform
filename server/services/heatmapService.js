@@ -1,4 +1,5 @@
-const { toUTCDateString } = require("../utils/dates");
+const { safeDay } = require("../utils/dates");
+const { handleKey } = require("../utils/helpers");
 
 const GROUPS = {
   cp:  ["codeforces"],
@@ -23,7 +24,7 @@ async function codeforcesCounts(handle) {
   const { fetchSubmissions } = require("./codeforces/cfTotalAccepted");
   const counts = {};
   for (const submission of await fetchSubmissions(handle)) {
-    bump(counts, toUTCDateString(Number(submission.creationTimeSeconds) * 1000), 1);
+    bump(counts, safeDay(submission.creationTimeSeconds), 1);
   }
   return counts;
 }
@@ -31,21 +32,14 @@ async function codeforcesCounts(handle) {
 async function leetcodeCounts(handle) {
   const { getLCStats } = require("./leetcode/lcService");
   const { submissionCalendar } = await getLCStats(handle);
-  const calendar =
-    typeof submissionCalendar === "string"
-      ? JSON.parse(submissionCalendar || "{}")
-      : submissionCalendar || {};
-  const counts = {};
-  Object.entries(calendar).forEach(([timestamp, count]) =>
-    bump(counts, toUTCDateString(Number(timestamp) * 1000), Number(count) || 0),
-  );
-  return counts;
+  const { countLeetcodeSubmissions } = require("./leetcode/lcSubmissionsCalendar");
+  return countLeetcodeSubmissions(submissionCalendar);
 }
 
 const defaultFetchers = {
   codeforces: (handle, range) => codeforcesCounts(handle, range),
   leetcode: (handle, range) => leetcodeCounts(handle, range),
-  github: (handle, range) => require("./github/githubService").getGithubDailyCommits(handle, range),
+  github: (handle) => require("./github/githubService").getGithubDailyPushes(handle),
 };
 
 function pad(value) { return String(value).padStart(2, "0"); }
@@ -102,7 +96,7 @@ function buildHeatmap(countsByPlatform, range, errors = {}) {
   };
 }
 async function cachedCounts(platform, handle, range, fetchers) {
-  const key = `${platform}:${handle.toLowerCase()}:${range.from}:${range.to}:`;
+  const key = `${platform}:${handleKey(handle)}:${range.from}:${range.to}:`;
   const hit = cache[key];
   if (hit && Date.now() < hit.expiresAt) return hit.counts;
   const counts = await fetchers[platform](handle, range);

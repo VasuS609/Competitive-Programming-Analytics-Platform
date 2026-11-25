@@ -12,7 +12,11 @@ function normalizeStats(platform, data, handle) {
 
   const source = data && typeof data === "object" ? data : {};
   const solved = parseCount(source.problemSolved ?? source.totalSolved);
-  const rating = parseCount(source.rating ?? source.currentRating);
+  const ratingValue = source.rating ?? source.currentRating;
+  const ratingNumber = ratingValue == null || ratingValue === "" ? null : Number(ratingValue);
+  const rating = Number.isFinite(ratingNumber) ? ratingNumber : null;
+  const currentRatingValue = source.currentRating ?? rating;
+  const currentRatingNumber = currentRatingValue == null || currentRatingValue === "" ? null : Number(currentRatingValue);
   const problems = Array.isArray(source.problems) ? source.problems.map(normalizeProblem) : [];
   const breakdown = buildProblemBreakdown(problems);
 
@@ -25,7 +29,7 @@ function normalizeStats(platform, data, handle) {
     problemSolved: solved,
     totalSolved: solved,
     rating,
-    currentRating: parseCount(source.currentRating ?? rating),
+    currentRating: Number.isFinite(currentRatingNumber) ? currentRatingNumber : null,
     rank: source.rank || source.globalRank || null,
     problems,
     problemBreakdown: breakdown,
@@ -58,13 +62,14 @@ function normalizeProblem(problem) {
 
   const difficulty = source.difficulty ?? source.level ?? source.levelName ?? null;
   const ratingValue = source.rating ?? source.difficultyRating ?? null;
+  const ratingNumber = ratingValue == null || ratingValue === "" ? null : Number(ratingValue);
 
   return {
     ...source,
     id: String(source.id ?? source.problemId ?? source.titleSlug ?? source.name ?? ""),
     name: source.name || source.title || source.titleSlug || "Unnamed problem",
     url: source.url || source.problemUrl || null,
-    rating: Number.isFinite(Number(ratingValue)) ? Number(ratingValue) : null,
+    rating: Number.isFinite(ratingNumber) ? ratingNumber : null,
     difficulty: difficulty === null ? null : String(difficulty),
     level: difficulty === null ? null : String(difficulty),
     tags: normalizedTags,
@@ -100,7 +105,15 @@ function handleKey(handle) {
   return String(handle ?? "").trim().toLowerCase();
 }
 
-module.exports = { handleKey, parseSubmissionDays, normalizeStats, normalizeProblem, parseCount };
+const IGNORED_VERDICTS = new Set(["COMPILATION_ERROR", "SKIPPED", "TESTING", "CHALLENGED"]);
+
+function classifyVerdict(verdict) {
+  if (verdict === "OK") return "accepted";
+  if (IGNORED_VERDICTS.has(verdict)) return "ignored";
+  return "notAccepted";
+}
+
+module.exports = { handleKey, parseSubmissionDays, normalizeStats, normalizeProblem, parseCount, classifyVerdict };
 
 
 

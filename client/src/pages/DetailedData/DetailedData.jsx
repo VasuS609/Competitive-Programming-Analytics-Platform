@@ -46,6 +46,7 @@ function DetailedData() {
 
       {handle ? (
         <DetailedDashboard
+          key={`${activePlatform}:${handle}`}
           handle={handle}
           platform={activePlatform}
           title={platform?.label ?? activePlatform}

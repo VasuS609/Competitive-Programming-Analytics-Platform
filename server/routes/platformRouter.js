@@ -21,7 +21,7 @@ const syncCooldown = new Map(); // key: `platform:handle` → timestamp
 const SYNC_COOLDOWN_MS = 60 * 1000;
 
 function checkSyncCooldown(req, res, next) {
-  const key = `${platformName(req)}:${req.params.handle}`;
+  const key = `${platformName(req)}:${handleKey(req.params.handle)}`;
 
   const last = syncCooldown.get(key) || 0;
 

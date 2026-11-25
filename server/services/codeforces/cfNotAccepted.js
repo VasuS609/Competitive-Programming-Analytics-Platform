@@ -1,11 +1,6 @@
 const { fetchSubmissions } = require("./cfTotalAccepted");
-const {safeDate, safeDay} = require("../../utils/dates");
-
-const IGNORED_VERDICTS = new Set(["COMPILATION_ERROR", "SKIPPED", "TESTING", "CHALLENGED"]);
-
-function toDate(seconds) {
-  return safeDay(seconds);
-}
+const { getLastNDates, safeDate, safeDay } = require("../../utils/dates");
+const { classifyVerdict } = require("../../utils/helpers");
 
 function toSubmission(submission) {
   const problem = submission.problem || {};
@@ -29,15 +24,13 @@ function toSubmission(submission) {
 }
 
 async function getCFNotAcceptedSubmissions(handle, days = 7) {
-  const cutoff = Date.now() - days * 86400000;
+  const dates = new Set(getLastNDates(days));
 
   return (await fetchSubmissions(handle))
     .filter((submission) =>
       submission.problem &&
-      submission.verdict &&
-      !IGNORED_VERDICTS.has(submission.verdict) &&
-      submission.verdict !== "OK" &&
-      Number(submission.creationTimeSeconds) * 1000 >= cutoff)
+      classifyVerdict(submission.verdict) === "notAccepted" &&
+      dates.has(safeDay(submission.creationTimeSeconds)))
     .map(toSubmission);
 }
 

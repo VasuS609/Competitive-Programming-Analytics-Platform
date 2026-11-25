@@ -1,79 +1,31 @@
-# DSA Prep Tracker
+# Competitive Programming Analytics Platform
 
-A full-stack dashboard built to track my own competitive programming practice — pulls live stats from Platforms like Codeforces, Leetcode, Codechef, logs my daily solves against a configurable goal, and visualizes rating progress over time.
- 
-Built as a personal tool I use daily, not a tutorial clone — the architecture (caching layer, REST API design, SQLite schema) evolved from real problems I hit while using it (e.g. CF's public API timing out, duplicate fetches across components).
+A React dashboard for Codeforces, LeetCode, and GitHub profiles. It shows solved problems, contest ratings, submission history, and an activity heatmap. The Express API fetches public platform data and caches it in memory. Saved profile handles and display preferences live in the browser.
 
-## Why I built this
+## Run locally
 
-I'm doing daily DSA practice (Codeforces + LeetCode) with a fixed daily goal (2× 1100-rated + 1× 1000-rated problems). I wanted a single dashboard to see my CF profile stats, track whether I hit my daily goal, and watch my rating trend over time — instead of checking multiple tabs and mentally tallying solves.
+Use Node.js 20.19+ on the 20.x release line, or Node.js 22.12+.
 
-## Features
-
-- **Live Codeforces integration** — pulls profile stats (rating, rank, problems solved) via the public CF API
-- **Server-side caching** — avoids hammering CF's API on every page load and smooths over their (frequent) flakiness/timeouts
-- **Goal tracking** — configurable daily goal system (currently 2× 1100-rated + 1× 1000-rated), logs solves to a local database and shows progress against the goal
-- **Problem log** — form to log solved problems (platform, rating, tags) into a persistent store
-- **Rating history chart** — a Recharts line chart of CF contest rating over time, served from a dedicated backend endpoint
-
-## Tech stack
-
-- **Frontend:** React, Recharts
-- **Backend:** Node.js, Express
-- **Database:** SQLite
-- **External APIs:** Codeforces public API
-
-## Architecture
-
-```
-React (dashboard, forms, charts)
-        │
-        ▼
-Express REST API
-  ├── /api/cf/stats/:handle    → cached CF profile summary
-  ├── /api/cf/rating/:handle   → cached CF rating history
-  ├── /api/problems            → CRUD for locally logged solves
-  └── /api/goals                → goal config + progress calculation
-        │
-        ▼
-SQLite (problems, goals)   +   Codeforces public API (external, cached)
-```
-
-Caching sits between the Express routes and the Codeforces API so that repeated page loads (or multiple components needing CF data) don't each trigger a fresh external call — this became necessary after hitting CF rate limits and 504s during development.
-
-## Setup
-
-```bash
-# backend
-cd server
-npm install
+```sh
+npm ci
 npm run dev
-
-# frontend
-cd client
-npm install
-npm start
 ```
 
-Set your Codeforces handle in `.env` (or the config file — adjust to match your actual setup) before running.
+Open [the dashboard](http://localhost:5173) and add your handles. The API runs on port 5000. No database, API keys, or environment files are required for local development.
 
-## Current status
+Copy `server/.env.example` to `server/.env` or `client/.env.example` to `client/.env` to override the defaults. At the repository root, `npm start` runs the API. For a production client build, run `npm run build --prefix client`. Set `CLIENT_ORIGIN` for the API in production and set `VITE_API_URL` before building the client.
 
-This is a working, actively-used tool — not a finished product. What's live right now:
+## Checks
 
--  CF profile stats with caching
--  CF rating-history chart
--  Local problem log (SQLite) with a configurable goal system
--  Goal progress view
+```sh
+npm test
+npm run lint --prefix client
+npm run build --prefix client
+```
 
+## Activity coverage
 
-## What I learned building this
-
-- Designing a small REST API from scratch (route structure, cache-aside pattern) rather than following a tutorial
-- Handling flaky third-party APIs gracefully (timeouts, 504s) instead of letting them crash the UI
-- SQLite schema design for a simple but real persistent store
-- React data-fetching patterns (hooks, loading/error states) and Recharts for time-series visualization
-
----
-
-*This project is under development as I continue my DSA prep — new features get added as I need them.*
+- Codeforces uses public submission history and counts distinct problems separately from accepted submissions.
+- LeetCode supplies daily submission totals and profile-level solved totals. The problem table accumulates publicly available recent solves while the server is running.
+- GitHub uses public push events from its API. Coverage depends on the events GitHub returns.
+- Charts use UTC dates. Restarting the API clears its in-memory data.

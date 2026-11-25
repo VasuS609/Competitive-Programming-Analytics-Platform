@@ -1,59 +1,22 @@
 const { getLCStats } = require("./lcService");
-const { LeetCode } = require("leetcode-query");
-const { buildCalendar, getLastNDates, toUTCDateString } = require("../../utils/dates");
-const cache = {};
-const CACHE_TTL = 10 * 60 * 1000;
-let _lc;
-function getLCClient() {
-  if (!_lc) _lc = new LeetCode();
-  return _lc;
-}
+const { buildCalendar, safeDay } = require("../../utils/dates");
 
-const RECENT_AC_QUERY = `query recentAcSubmissions($username: String!, $limit: Int!) {
-  recentAcSubmissionList(username: $username, limit: $limit) {
-    titleSlug
-    timestamp
+function countLeetcodeSubmissions(calendar) {
+  const entries = typeof calendar === "string" ? JSON.parse(calendar || "{}") : calendar;
+  const counts = {};
+  for (const [timestamp, value] of Object.entries(entries || {})) {
+    const date = safeDay(timestamp);
+    const count = Number(value);
+    if (date && Number.isFinite(count) && count > 0) {
+      counts[date] = (counts[date] || 0) + count;
+    }
   }
-}`;
+  return counts;
+}
 
 async function getLeetcodeSubmissionCalendar(handle, days = 7) {
-  const key = String(handle).trim().toLowerCase();
-  const cached = cache[key];
-  if (cached && Date.now() < cached.expiresAt) {
-    return buildCalendar(cached.counts, cached.firstActivityDate, days);
-  }
-
-  const profile = await getLCStats(handle);
-
-  const dates = getLastNDates(30);
-  const counts = Object.fromEntries(dates.map((date) => [date, 0]));
-  const acceptedProblemsByDate = Object.fromEntries(dates.map((date) => [date, new Set()]));
-  let firstActivityDate = null;
-
-  let acceptedSubmissions = profile.recentSubmissionList || [];
-  try {
-    const response = await getLCClient().graphql({
-      query: RECENT_AC_QUERY,
-      variables: { username: handle, limit: 50 },
-    });
-    acceptedSubmissions = response?.data?.recentAcSubmissionList || acceptedSubmissions;
-  } catch {
-    acceptedSubmissions = acceptedSubmissions.filter((submission) => submission.statusDisplay === "Accepted");
-  }
-
-  acceptedSubmissions
-    .filter((submission) => submission.titleSlug && submission.timestamp)
-    .forEach((submission) => {
-      const date = toUTCDateString(Number(submission.timestamp) * 1000);
-      if (date in acceptedProblemsByDate) {
-        acceptedProblemsByDate[date].add(submission.titleSlug);
-        counts[date] = acceptedProblemsByDate[date].size;
-        if (!firstActivityDate || date < firstActivityDate) firstActivityDate = date;
-      }
-    });
-
-  cache[key] = { counts, firstActivityDate, expiresAt: Date.now() + CACHE_TTL };
-  return buildCalendar(counts, firstActivityDate, days);
+  const { submissionCalendar } = await getLCStats(handle);
+  return buildCalendar(countLeetcodeSubmissions(submissionCalendar), days);
 }
 
-module.exports = { getLeetcodeSubmissionCalendar };
+module.exports = { countLeetcodeSubmissions, getLeetcodeSubmissionCalendar };

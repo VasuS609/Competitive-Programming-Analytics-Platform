@@ -11,11 +11,12 @@ const LEVEL_COLORS = [
 ];
 
 const LABELS = { codeforces: "Codeforces", leetcode: "LeetCode", github: "GitHub" };
-const UNITS = { github: "commit" };
+const UNITS = { github: "push" };
 
 function unitFor(platform, count) {
   const unit = UNITS[platform] || "submission";
-  return `${unit}${count === 1 ? "" : "s"}`;
+  if (count === 1) return unit;
+  return unit === "push" ? "pushes" : "submissions";
 }
 
 function levelFor(count, max) {

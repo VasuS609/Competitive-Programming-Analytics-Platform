@@ -40,7 +40,7 @@ const PLATFORM_REGISTRY = {
 };
 
 function getPlatformService(platform, type) {
-  return PLATFORM_REGISTRY[platform]?.[type];
+  return Object.hasOwn(PLATFORM_REGISTRY, platform) ? PLATFORM_REGISTRY[platform][type] : undefined;
 }
 
 /** Returns the set of registered platform names. */

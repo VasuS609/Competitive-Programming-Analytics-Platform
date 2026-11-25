@@ -3,7 +3,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const rateLimit = require("express-rate-limit");
 
-dotenv.config();
+dotenv.config({ path: [require("node:path").join(__dirname, ".env"), ".env"], quiet: true });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,7 +23,7 @@ if (rawOrigin) {
   );
   process.exit(1);
 } else {
-  allowedOrigins = ["http://localhost:5173"];
+  allowedOrigins = ["http://localhost:5173", "http://127.0.0.1:5173"];
 }
 
 app.use(
@@ -31,7 +31,7 @@ app.use(
     origin(origin, callback) {
       // Allow requests with no Origin header (server-to-server, curl, etc.).
       if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-      callback(new Error(`CORS: Origin '${origin}' is not allowed`));
+      callback(Object.assign(new Error("Origin is not allowed"), { status: 403 }));
     },
   }),
 );
@@ -57,15 +57,16 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
   console.error("[Error]", err);
   const status = err.status || 500;
   const message =
-    err.isUserFacing || status === 400 || status === 404 || status === 429
-      ? err.message
+    err.isUserFacing || [400, 403, 404, 429].includes(status) ? err.message
+      : status === 504 ? "The upstream service timed out"
+      : status === 502 ? "The upstream service is unavailable"
       : "Internal server error";
   res.status(status).json({ error: message });
 });
 
 // --- Server startup ---
 let server;
-if (process.env.NODE_ENV !== "test") {
+if (require.main === module) {
   server = app.listen(PORT, () => {
     console.log(`[server] Listening on port ${PORT}`);
   });

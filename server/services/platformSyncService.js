@@ -1,5 +1,4 @@
 const { getPlatformService, getSupportedPlatforms } = require("./platformServices");
-const { getSolvedProblems } = require("./solvedProblemService");
 
 // TODO: Add per-user authentication before exposing sync to the public internet.
 // Until then sync is protected only by the rate limiter + per-handle cooldown
@@ -31,24 +30,10 @@ async function syncPlatform(handle, platform) {
   // Pass forceRefresh so sync always fetches live data, bypassing any cache.
   const stats = await statsService(normalizedHandle, { forceRefresh: true });
 
-  // Submission data has separate caches from the stats response. Refresh them
-  // too, so heatmaps and submission graphs cannot remain stale after sync.
-  if (normalizedPlatform === "codeforces") {
-    const { fetchSubmissions } = require("./codeforces/cfTotalAccepted");
-    await fetchSubmissions(normalizedHandle, { forceRefresh: true });
-  }
-  if (normalizedPlatform === "github") {
-    const { getGithubDailyCommits } = require("./github/githubService");
-    await getGithubDailyCommits(normalizedHandle, { forceRefresh: true });
-  }
-
   const { invalidateHeatmapCache } = require("./heatmapService");
   invalidateHeatmapCache(normalizedPlatform, normalizedHandle);
 
-  const problems =
-    normalizedPlatform === "github"
-      ? stats.repositories || []
-      : getSolvedProblems(normalizedPlatform, normalizedHandle);
+  const problems = stats.problems || [];
 
   return {
     platform: normalizedPlatform,

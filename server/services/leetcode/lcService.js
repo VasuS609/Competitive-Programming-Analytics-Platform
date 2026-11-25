@@ -1,14 +1,15 @@
+const { createTtlCache } = require("../../utils/ttlCache");
 const { LeetCode } = require("leetcode-query");
 const { getSolvedProblems, syncSolvedProblems } = require("../solvedProblemService");
-const { safeDay } = require("../../utils/dates");
+const { getLastNDates, safeDay } = require("../../utils/dates");
 
 let _lc;
 function getLCClient() {
     if (!_lc) _lc = new LeetCode();
     return _lc;
 } 
-const cache = {};
-const CACHE_TTL = 10 * 60 * 1000;
+const { handleKey } = require("../../utils/helpers");
+const statsCache = createTtlCache();
 
 const RECENT_AC_QUERY = `query recentAcSubmissions($username: String!, $limit: Int!) {
   recentAcSubmissionList(username: $username, limit: $limit) {
@@ -23,11 +24,12 @@ function normalizeRatingHistory(history) {
     if (!Array.isArray(history)) return [];
 
     return history
-        .filter((contest) => contest.attended && contest.rating && contest.contest?.startTime)
+        .filter((contest) => contest.attended && contest.rating != null && contest.contest?.startTime != null)
         .map((contest) => ({
-            date: new Date(Number(contest.contest.startTime) * 1000).toISOString().slice(0, 10),
-            rating: Math.round(Number(contest.rating)),
+            date: safeDay(contest.contest.startTime),
+            rating: Number(contest.rating),
         }))
+        .filter((contest) => contest.date !== null && Number.isFinite(contest.rating))
         .sort((a, b) => a.date.localeCompare(b.date));
 }
 
@@ -88,7 +90,9 @@ async function getCompleteUserData(handle) {
 
     const { matchedUser, recentSubmissionList } = user;
     const contestRanking = contestInfo?.userContestRanking;
-    const rating = contestRanking?.rating ? Math.round(contestRanking.rating) : 0;
+    const ratingValue = contestRanking?.rating;
+    const ratingNumber = ratingValue == null || ratingValue === "" ? null : Number(ratingValue);
+    const rating = Number.isFinite(ratingNumber) ? ratingNumber : null;
 
     const counts = matchedUser.submitStats?.acSubmissionNum || [];
     const find = (level) => counts.find((c) => c.difficulty === level)?.count ?? 0;
@@ -124,17 +128,8 @@ async function getCompleteUserData(handle) {
     };
 }
 
-async function getLCStats(handle, { forceRefresh = false } = {}) {
-    const key = String(handle).trim().toLowerCase();
-    const cached = cache[key];
-
-    if (!forceRefresh && cached && Date.now() < cached.expiresAt) {
-        return cached.data;
-    }
-
-    const data = await getCompleteUserData(String(handle).trim());
-    cache[key] = { data, expiresAt: Date.now() + CACHE_TTL };
-    return data;
+function getLCStats(handle, options) {
+  return statsCache.get(handleKey(handle), () => getCompleteUserData(String(handle).trim()), options);
 }
 
 async function getLCRatingHistory(handle) {
@@ -144,18 +139,12 @@ async function getLCRatingHistory(handle) {
 
 async function getLCAcceptedActivity(handle, days = 7) {
     const stats = await getLCStats(handle);
-    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const dates = new Set(getLastNDates(days));
     const acceptedByDate = new Map();
 
     for (const submission of stats.recentSubmissionList || []) {
-        if (
-            submission.statusDisplay !== "Accepted" ||
-            !submission.timestamp ||
-            Number(submission.timestamp) * 1000 < cutoff
-        ) continue;
-
         const date = safeDay(submission.timestamp);
-        if(!date) continue;
+        if (submission.statusDisplay !== "Accepted" || !date || !dates.has(date)) continue;
 
         if (!acceptedByDate.has(date)) acceptedByDate.set(date, new Set());
         acceptedByDate.get(date).add(submission.titleSlug || submission.title);

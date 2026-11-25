@@ -78,6 +78,7 @@ test("toUTCDateString: returns null for invalid input", () => {
 // 3. Handle validation
 // ---------------------------------------------------------------------------
 const { validateHandle } = require("../utils/validateHandle");
+const { classifyVerdict } = require("../utils/helpers");
 
 test("validateHandle: accepts valid handles", () => {
   assert.equal(validateHandle("tourist"), "tourist");
@@ -97,6 +98,17 @@ test("validateHandle: rejects handle > 40 chars", () => {
 test("validateHandle: rejects handle with forbidden characters", () => {
   assert.throws(() => validateHandle("bad handle!"), (err) => { assert.equal(err.status, 400); return true; });
   assert.throws(() => validateHandle("x@y"), (err) => { assert.equal(err.status, 400); return true; });
+});
+
+for (const verdict of ["COMPILATION_ERROR", "SKIPPED", "TESTING", "CHALLENGED"]) {
+  test(`classifyVerdict: ignores ${verdict}`, () => {
+    assert.equal(classifyVerdict(verdict), "ignored");
+  });
+}
+
+test("classifyVerdict: recognizes accepted and non-accepted verdicts", () => {
+  assert.equal(classifyVerdict("OK"), "accepted");
+  assert.equal(classifyVerdict("WRONG_ANSWER"), "notAccepted");
 });
 
 // ---------------------------------------------------------------------------
@@ -192,104 +204,79 @@ test("syncPlatform calls statsService with forceRefresh=true", async () => {
 // ---------------------------------------------------------------------------
 // 7. Provider timeout surfaces as a handled error (unit)
 // ---------------------------------------------------------------------------
-test("httpClient: AbortController timeout surfaces as 504 error", async () => {
+test("httpClient times out while reading the upstream response body", async (t) => {
   const { fetchJson } = require("../utils/httpClient");
-
-  // Use an immediately-aborting timeout.
-  let caught;
-  try {
-    // Point at a non-routable IP to guarantee no response.
-    // We use timeoutMs=1 so it fires before any real network round-trip.
-    await fetchJson("http://10.255.255.1/", { timeoutMs: 1 });
-  } catch (err) {
-    caught = err;
-  }
-  assert.ok(caught, "Should have thrown");
-  assert.equal(caught.status, 504, `Expected 504, got ${caught.status}: ${caught.message}`);
+  t.mock.method(globalThis, "fetch", async (_url, { signal }) => ({
+    ok: true,
+    json: () => new Promise((_resolve, reject) => {
+      signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+    }),
+  }));
+  await assert.rejects(fetchJson("https://example.com", { timeoutMs: 10 }), { status: 504 });
 });
 
 // ---------------------------------------------------------------------------
 // 8. GitHub pagination unit test (mocked)
 // ---------------------------------------------------------------------------
-test("getGithubDailyCommits counts >100 events across pages", async () => {
-  const { getLastNDates, toUTCDateString } = require("../utils/dates");
-
-  // Build 250 fake push events spread across 3 pages.
-  // Page 1: 100 events on 2026-11-01
-  // Page 2: 100 events on 2026-11-02
-  // Page 3: 50 events on 2026-11-03 (< 100, signals last page)
-  const now = new Date();
-  const dateStr = (n) => {
-    const d = new Date(now);
-    d.setUTCDate(d.getUTCDate() - n);
-    return d.toISOString();
-  };
-
-  function makePage(isoDate, count, perCommit = 2) {
-    return Array.from({ length: count }, (_, i) => ({
+test("GitHub counts push events across pages and shares fetches across handle casing", async (t) => {
+  const { getGithubDailyPushes } = require("../services/github/githubService");
+  const date = new Date().toISOString();
+  const pages = [];
+  t.mock.method(globalThis, "fetch", async (url) => {
+    const page = Number(new URL(url).searchParams.get("page"));
+    pages.push(page);
+    const events = Array.from({ length: page === 3 ? 50 : 100 }, () => ({
       type: "PushEvent",
-      created_at: isoDate,
-      payload: { distinct_size: perCommit },
+      created_at: date,
+      payload: { distinct_size: 5 },
     }));
-  }
+    return Response.json(events);
+  });
 
-  const page1 = makePage(dateStr(2), 100, 1); // 100 commits
-  const page2 = makePage(dateStr(1), 100, 1); // 100 commits
-  const page3 = makePage(dateStr(0), 50,  1); //  50 commits
-
-  let callCount = 0;
-  async function fakeFetchJson(url) {
-    if (url.includes("/users/")) {
-      if (url.includes("/repos")) return [];
-      // Events pages
-      if (url.includes("page=1")) { callCount++; return page1; }
-      if (url.includes("page=2")) { callCount++; return page2; }
-      if (url.includes("page=3")) { callCount++; return page3; }
-      // profile
-      return { login: "test", public_repos: 0, followers: 0, following: 0 };
-    }
-    return {};
-  }
-
-  // We test the pagination logic directly by calling the internal
-  // getGithubData logic. Since it's not exported, we verify the
-  // getGithubDailyCommits contract returns counts for 250 events.
-  // For a real integration test we'd mock the fetch; here we verify
-  // the pagination loop in the source file goes up to MAX_EVENT_PAGES.
-  const src = require("fs").readFileSync(
-    require("path").join(__dirname, "../services/github/githubService.js"),
-    "utf8",
-  );
-  assert.ok(
-    src.includes("MAX_EVENT_PAGES"),
-    "githubService should define MAX_EVENT_PAGES for pagination",
-  );
-  const maxPagesMatch = src.match(/MAX_EVENT_PAGES\s*=\s*(\d+)/);
-  assert.ok(maxPagesMatch, "MAX_EVENT_PAGES constant should be defined");
-  assert.ok(Number(maxPagesMatch[1]) >= 3, `MAX_EVENT_PAGES should be >= 3, got ${maxPagesMatch[1]}`);
+  const [first, second] = await Promise.all([
+    getGithubDailyPushes("MockPushUser"),
+    getGithubDailyPushes("mockpushuser"),
+  ]);
+  assert.equal(first[date.slice(0, 10)], 250);
+  assert.deepEqual(second, first);
+  assert.deepEqual(pages, [1, 2, 3]);
 });
 
 // ---------------------------------------------------------------------------
 // 9. cfTotalAccepted date uses UTC (not IST-shifted)
 // ---------------------------------------------------------------------------
-test("cfTotalAccepted.toSubmission uses UTC for date field", () => {
-  const src = require("fs").readFileSync(
-    require("path").join(__dirname, "../services/codeforces/cfTotalAccepted.js"),
-    "utf8",
-  );
-  // Should use toUTCDateString (from dates utility), not raw toISOString with offset.
-  assert.ok(src.includes("toUTCDateString"), "cfTotalAccepted must use toUTCDateString");
-  // Must NOT apply IST offset (330 or 5.5 * 60 etc.)
-  assert.ok(!src.includes("330"), "cfTotalAccepted must not apply IST (330) offset");
+test("Codeforces submission dates use UTC at the start of the selected window", async (t) => {
+  const { getCFAcceptedSubmissions } = require("../services/codeforces/cfTotalAccepted");
+  const { getLastNDates } = require("../utils/dates");
+  const [date] = getLastNDates(2);
+  const creationTimeSeconds = Date.parse(`${date}T00:00:00Z`) / 1000;
+  t.mock.method(globalThis, "fetch", async () => Response.json({
+    status: "OK",
+    result: [{ verdict: "OK", creationTimeSeconds, problem: { contestId: 42, index: "A" } }],
+  }));
+  const [submission] = await getCFAcceptedSubmissions("MockUTCUser", 2);
+  assert.equal(submission.date, date);
+  assert.equal(submission.time, `${date}T00:00:00.000Z`);
 });
 
-test("cfService.buildSolveActivity uses UTC (no IST offset)", () => {
-  const src = require("fs").readFileSync(
-    require("path").join(__dirname, "../services/codeforces/cfService.js"),
-    "utf8",
-  );
-  assert.ok(!src.includes("330"), "cfService must not apply IST (330) offset");
-  assert.ok(src.includes("toUTCDateString"), "cfService must use toUTCDateString");
+test("cfService.buildSolveActivity groups accepted solves by UTC date", async (t) => {
+  const { getCFStats } = require("../services/codeforces/cfService");
+  const timestamp = Date.parse("2025-01-02T00:00:00Z") / 1000;
+  t.mock.method(globalThis, "fetch", async (url) => {
+    if (url.includes("/user.status")) {
+      return Response.json({
+        status: "OK",
+        result: [{
+          creationTimeSeconds: timestamp,
+          verdict: "OK",
+          problem: { contestId: 42, index: "A", name: "Problem A", tags: [] },
+        }],
+      });
+    }
+    return Response.json({ status: "OK", result: [{ handle: "MockSolveUser" }] });
+  });
+  const stats = await getCFStats("MockSolveUser");
+  assert.deepEqual(stats.solveActivity.daily, [{ date: "2025-01-02", solved: 1 }]);
 });
 
 // ---------------------------------------------------------------------------
@@ -322,4 +309,60 @@ test("getGithubActivity returns standard createActivity shape", async () => {
   assert.ok("range" in result && "totals" in result && "daily" in result);
 });
 
-console.log("All tests defined. Running with node --test ...");
+test("Codeforces stats, activity and sync share submissions and preserve distinct problems", async (t) => {
+  const { getCFStats } = require("../services/codeforces/cfService");
+  const { getCodeforcesActivity } = require("../services/activityService");
+  const { syncPlatform } = require("../services/platformSyncService");
+  const creationTimeSeconds = Math.floor(Date.now() / 1000);
+  const submissions = ["A", "B"].map((index) => ({
+    creationTimeSeconds,
+    verdict: "OK",
+    problem: { contestId: 42, index, name: `Problem ${index}`, tags: ["math"] },
+  }));
+  let submissionRequests = 0;
+  t.mock.method(globalThis, "fetch", async (url) => {
+    if (url.includes("/user.status")) {
+      submissionRequests += 1;
+      return Response.json({ status: "OK", result: submissions });
+    }
+    assert.match(url, /user\.info/);
+    return Response.json({ status: "OK", result: [{ handle: "MockCFUser" }] });
+  });
+
+  const [stats, activity] = await Promise.all([
+    getCFStats("MockCFUser"),
+    getCodeforcesActivity("mockcfuser"),
+  ]);
+  assert.equal(stats.problemSolved, 2);
+  assert.deepEqual(stats.problems.map(({ id, tags }) => ({ id, tags })), [
+    { id: "42-A", tags: ["math"] },
+    { id: "42-B", tags: ["math"] },
+  ]);
+  assert.equal(activity.totals.acceptedProblems, 2);
+  assert.equal(submissionRequests, 1);
+  const sync = await syncPlatform("MOCKCFUSER", "codeforces");
+  assert.equal(sync.syncedCount, 2);
+  assert.equal(submissionRequests, 2);
+});
+
+test("LeetCode calendar returns exactly the selected UTC days", async (t) => {
+  const { Credential, LeetCode } = require("leetcode-query");
+  t.mock.method(Credential.prototype, "init", async () => {});
+  const { getLeetcodeSubmissionCalendar } = require("../services/leetcode/lcSubmissionsCalendar");
+  const { getLastNDates } = require("../utils/dates");
+  const dates = getLastNDates(7);
+  const timestamp = Date.parse(`${dates[0]}T00:00:00Z`) / 1000;
+  t.mock.method(LeetCode.prototype, "user", async () => ({
+    matchedUser: { submissionCalendar: JSON.stringify({ [timestamp]: 5 }) },
+    recentSubmissionList: [{ titleSlug: "two-sum", title: "Two Sum", statusDisplay: "Accepted", timestamp }],
+  }));
+  t.mock.method(LeetCode.prototype, "user_contest_info", async () => null);
+  t.mock.method(LeetCode.prototype, "graphql", async () => ({}));
+  const calendar = await getLeetcodeSubmissionCalendar("MockLCUser", 7);
+  assert.deepEqual(calendar.map(({ date }) => date), dates);
+  assert.equal(calendar[0].count, 5);
+  assert.equal(calendar[1].count, 0);
+  const { getLCAcceptedSubmissions } = require("../services/leetcode/lcTotalAccepted");
+  const accepted = await getLCAcceptedSubmissions("MockLCUser", 7);
+  assert.equal(accepted[0].time, `${dates[0]}T00:00:00.000Z`);
+});

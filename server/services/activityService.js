@@ -1,5 +1,5 @@
-const { getLastNDates, toUTCDateString } = require("../utils/dates");
-const { getLCStats } = require("./leetcode/lcService");
+const { getLastNDates, safeDay } = require("../utils/dates");
+const { getLeetcodeSubmissionCalendar } = require("./leetcode/lcSubmissionsCalendar");
 const { fetchSubmissions } = require("./codeforces/cfTotalAccepted");
 
 // createActivity builds the canonical activity response shape:
@@ -34,7 +34,7 @@ async function getCodeforcesActivity(handle, days = 7) {
   const daily = {};
   submissions.forEach((submission) => {
     if (!submission.problem || !submission.creationTimeSeconds) return;
-    const date = toUTCDateString(submission.creationTimeSeconds * 1000);
+    const date = safeDay(submission.creationTimeSeconds);
     if (!date) return;
     if (!daily[date]) {
       daily[date] = {
@@ -61,21 +61,16 @@ async function getCodeforcesActivity(handle, days = 7) {
 }
 
 async function getLeetcodeActivity(handle, days = 7) {
-  const stats = await getLCStats(handle);
-  const calendar = typeof stats.submissionCalendar === "string" ? JSON.parse(stats.submissionCalendar || "{}") : stats.submissionCalendar || {};
-  const daily = {};
-  Object.entries(calendar).forEach(([timestamp, count]) => {
-    daily[toUTCDateString(Number(timestamp) * 1000)] = { submissions: Number(count) || 0 };
-  });
+  const calendar = await getLeetcodeSubmissionCalendar(handle, days);
+  const daily = Object.fromEntries(calendar.map(({ date, count }) => [date, { submissions: count }]));
   return createActivity(days, daily);
 }
 
-// GitHub activity: converts commitsByDay (date→count) to the standard shape.
 async function getGithubActivity(handle, days = 7) {
-  const { getGithubStats } = require("./github/githubService");
-  const stats = await getGithubStats(handle);
+  const { getGithubDailyPushes } = require("./github/githubService");
+  const counts = await getGithubDailyPushes(handle);
   const daily = {};
-  for (const [date, count] of Object.entries(stats.commitsByDay || {})) {
+  for (const [date, count] of Object.entries(counts)) {
     if (count > 0) daily[date] = { submissions: count };
   }
   return createActivity(days, daily);

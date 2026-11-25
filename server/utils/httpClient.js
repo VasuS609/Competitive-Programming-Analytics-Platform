@@ -27,22 +27,20 @@ async function fetchJson(url, { headers = {}, timeoutMs = DEFAULT_TIMEOUT_MS, va
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   let response;
+  let body;
   try {
     response = await fetch(url, { headers, signal: controller.signal });
-  } catch (err) {
-    clearTimeout(timer);
-    if (err.name === "AbortError") {
-      const e = new Error(`Request timed out: ${url}`);
-      e.status = 504;
-      throw e;
+    body = await response.json();
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw Object.assign(new Error(`Request timed out: ${url}`), { status: 504 });
     }
-    const e = new Error(err.message || "Network error");
-    e.status = 502;
-    throw e;
+    if (!response || response.ok) {
+      throw Object.assign(new Error("Invalid or unavailable upstream response", { cause: error }), { status: 502 });
+    }
+  } finally {
+    clearTimeout(timer);
   }
-  clearTimeout(timer);
-
-  const body = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     const message = body?.message || body?.comment || body?.error || `HTTP ${response.status}`;

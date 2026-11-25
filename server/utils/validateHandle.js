@@ -18,7 +18,7 @@ function validateHandle(raw) {
     e.status = 400;
     throw e;
   }
-  if (!HANDLE_RE.test(handle)) {
+  if (!HANDLE_RE.test(handle) || handle === "." || handle === "..") {
     const e = new Error("Handle may only contain letters, digits, underscores, hyphens and dots");
     e.status = 400;
     throw e;

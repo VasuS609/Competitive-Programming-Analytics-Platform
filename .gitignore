@@ -21,3 +21,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local database files
+*.db
+*.db-wal
+*.db-shm
