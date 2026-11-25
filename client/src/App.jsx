@@ -10,6 +10,7 @@ function App() {
     <div>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/progress" element={<Dashboard progress />} />
         <Route path="/detailed" element={<DetailedData />} />
       </Routes>      
     </div>

@@ -1,7 +1,7 @@
 const CACHE_TTL = 5 * 60 * 1000;
 const requestCache = new Map();
 
-export function getCachedRequest(key, url) {
+export function getCachedRequest(key, url, { fetchOptions, shouldCache } = {}) {
   const now = Date.now();
   const cached = requestCache.get(key);
 
@@ -21,7 +21,7 @@ export function getCachedRequest(key, url) {
     promise: null,
   };
 
-  entry.promise = fetch(url, { signal: controller.signal })
+  entry.promise = fetch(url, { ...fetchOptions, signal: controller.signal })
 
     .then(async (response) => 
       {
@@ -29,7 +29,7 @@ export function getCachedRequest(key, url) {
       
       if (!response.ok) throw new Error(body.error || "Request failed");
 
-      entry.expiresAt = Date.now() + CACHE_TTL;
+      entry.expiresAt = !shouldCache || shouldCache(body) ? Date.now() + CACHE_TTL : 0;
       return body;
     })
 

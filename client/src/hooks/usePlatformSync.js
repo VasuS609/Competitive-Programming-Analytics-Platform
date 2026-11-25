@@ -16,6 +16,7 @@ export function usePlatformSync(platform, handle) {
       invalidateCachedRequest(`${platform}:${normalizedHandle}:stats`);
       invalidateCachedRequestsByPrefix("heatmap:");
       invalidateCachedRequestsByPrefix("total-accepted:");
+      invalidateCachedRequestsByPrefix("progress:");
       invalidateCachedRequestsByPrefix(`${platform}:${normalizedHandle}:`);
 
       window.dispatchEvent(new CustomEvent("platform-sync", {

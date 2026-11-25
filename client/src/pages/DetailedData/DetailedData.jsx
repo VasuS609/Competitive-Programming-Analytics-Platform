@@ -19,6 +19,7 @@ function DetailedData() {
           <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>
             Home
           </NavLink>
+          <NavLink to="/progress">Progress</NavLink>
           <NavLink to="/detailed" className={({ isActive }) => (isActive ? "active" : "")}>
             Detailed data
           </NavLink>

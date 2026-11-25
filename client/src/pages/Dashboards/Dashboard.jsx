@@ -1,5 +1,6 @@
 import { useState } from "react";
 import HomeDashboard from "./HomeDashboard";
+import ProgressDashboard from "./progress/ProgressDashboard";
 import { NavLink } from "react-router-dom";
 import { useProfile } from "../../context/useProfile";
 import { SUPPORTED_PLATFORMS } from "../../config/platforms";
@@ -43,12 +44,12 @@ function ProfileForm({ activePlatform, handles, setActivePlatform, setHandle }) 
   );
 }
 
-function Dashboard() {
+function Dashboard({ progress = false }) {
   const { activePlatform, handles, setActivePlatform, setHandle } = useProfile();
   const hasHandles = Object.values(handles).some(Boolean);
 
   return (
-    <main className="app-shell text-black">
+    <main className={`app-shell text-black${progress ? " progress-shell" : ""}`}>
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark">DS</span>
@@ -61,6 +62,7 @@ function Dashboard() {
         >
           Home
         </NavLink>
+        <NavLink to="/progress">Progress</NavLink>
         <NavLink
           to="/detailed"
           className={({ isActive }) => (isActive ? "active" : "")}
@@ -71,6 +73,7 @@ function Dashboard() {
 
       </header>
 
+      {progress ? <ProgressDashboard handles={handles} /> : <>
       <section className="hero">
         <p className="eyebrow ">Daily practice dashboard</p>
         <h1>One view for every platform profile.</h1>
@@ -92,6 +95,7 @@ function Dashboard() {
           Save a username above to populate your dashboard.
         </div>
       )}
+      </>}
     </main>
   );
 }
