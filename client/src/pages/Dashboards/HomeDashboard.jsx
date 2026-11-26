@@ -9,6 +9,7 @@ import { SUPPORTED_PLATFORMS } from "../../config/platforms";
 const HEATMAP_MONTHS = 3;
 
 function HomeDashboard({ handles }) {
+
   const { days } = useProfile();
   const totalAccepted = useTotalAccepted(handles, days);
   const heatmap = useHeatmap(handles, HEATMAP_MONTHS);
@@ -31,11 +32,13 @@ function HomeDashboard({ handles }) {
         : Number(item.data?.problemSolved ?? item.data?.totalSolved ?? 0)),
     0,
   );
+  
   const radarValues = [
     { subject: "CP",  value: heatmap.data?.totals.cp  ?? 0 },
     { subject: "DSA", value: heatmap.data?.totals.dsa ?? 0 },
     { subject: "Dev", value: heatmap.data?.totals.dev ?? 0 },
   ];
+
   const submissionStatus = totalAccepted.data?.platformStatus || {};
   const submissionSources = SUPPORTED_PLATFORMS.filter(({ id }) => submissionStatus[id]?.ok);
   const failedSubmissionPlatforms = Object.keys(submissionStatus).filter((id) => !submissionStatus[id].ok);
@@ -48,8 +51,17 @@ function HomeDashboard({ handles }) {
 
           <h3>Cross-platform activity</h3>
 
-          {!heatmap.hasHandles ? <p className="muted">Add a profile handle to see your activity.</p> : heatmap.loading ? <p className="muted">Loading activity...</p> : heatmap.error ? <p className="muted">Activity unavailable: {heatmap.error.message}</p> : heatmap.data ? <ActivityHeatmap data={heatmap.data} /> : null}
+          <p className="muted">Track your activity across different platforms.</p>
+
+          {!heatmap.hasHandles ? 
+          <p className="muted">Add a profile handle to see your activity.</p> : 
+          heatmap.loading ? 
+          <p className="muted">Loading activity...</p> :
+           heatmap.error ? 
+           <p className="muted">Activity unavailable: {heatmap.error.message}</p> : 
+           heatmap.data ? <ActivityHeatmap data={heatmap.data} /> : null}
           {failedPlatforms.length > 0 && <p className="muted heatmap-warning">Could not load: {failedPlatforms.join(", ")}</p>}
+
         </section>
 
         <section className="content-panel radar-panel">
@@ -101,11 +113,17 @@ function HomeDashboard({ handles }) {
           {failedSubmissionPlatforms.length > 0 && (
             <p className="muted">Submissions unavailable for {failedSubmissionPlatforms.map((id) => SUPPORTED_PLATFORMS.find((platform) => platform.id === id)?.label).join(", ")}.</p>
           )}
+
           {totalAccepted.loading ? (
+
             <p className="muted">Loading submissions...</p>
+
           ) : totalAccepted.error ? (
+
             <p className="muted">Submissions unavailable: {totalAccepted.error.message}</p>
+
           ) : submissionSources.length > 0 ? (
+
             <ResponsiveContainer width="100%" height={240}>
 
               <BarChart data={totalAccepted.data.daily}>
@@ -120,10 +138,13 @@ function HomeDashboard({ handles }) {
               </BarChart>
               
             </ResponsiveContainer>
+
           ) : (
+
             <p className="muted">{handles.codeforces || handles.leetcode
               ? "No submission data is available for the selected profiles."
               : "Add a Codeforces or LeetCode handle to see daily submissions."}</p>
+              
           )}
 
         </section>

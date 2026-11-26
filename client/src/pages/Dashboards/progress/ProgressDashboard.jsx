@@ -53,6 +53,12 @@ export default function ProgressDashboard({ handles }) {
   const connected = domains.some(d => handles[d.platform]);
   const empty = data?.activeDays.length > 0 && data.activeDays.every(day => day.activeDay === false);
   const limits = data?.rules.range;
+  let notice;
+  if (error) {
+    notice = <span role="alert" className="pg-warning">Progress unavailable. {error.message} <button onClick={retry}>Retry</button></span>;
+  } else if (empty && connected) {
+    notice = <>No activity in this period. Try a longer period or check your <Link to="/">profile handles</Link>.</>;
+  }
   return <div className="pg-dashboard" aria-busy={loading}>
     <header className="pg-title"><div><h1>Weekly progress</h1><p>Development, problem solving and contest practice</p></div>
       <label>Period <select aria-label="Progress period" value={weeks ?? data?.range.weeks ?? ""} disabled={!limits}
@@ -61,13 +67,11 @@ export default function ProgressDashboard({ handles }) {
           .map(n => <option key={n} value={n}>{n} {n === 1 ? "week" : "weeks"}</option>) :
           <option value={weeks ?? ""}>{weeks ? weeks + " weeks" : "Loading…"}</option>}
       </select></label></header>
-    {error && <p className="pg-warning" role="alert">Progress unavailable. {error.message} <button onClick={retry}>Retry</button></p>}
     <div className="pg-columns">{domains.map(domain =>
       <GoalCard key={domain.id} domain={domain} connected={Boolean(handles[domain.platform])} loading={loading}
         result={data?.[domain.id]} status={data?.platformStatus[domain.platform]} error={error}
         goal={goals[domain.id]} onSave={goal => saveGoal(domain.id, goal)} rules={data?.rules} />)}</div>
-    {empty && connected && <p className="status-panel">No activity in this period. Try a longer period or check your <Link to="/">profile handles</Link>.</p>}
-    <DayGrid data={data} loading={loading} />
+    <DayGrid data={data} loading={loading} notice={notice} />
     <WeekCharts data={data} goals={goals} loading={loading} />
     <CpExtras data={data} loading={loading} />
     <CalculationNote rules={data?.rules} unknownDifficulty={data?.dsa.unknownDifficulty} />

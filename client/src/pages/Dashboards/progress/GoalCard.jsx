@@ -6,10 +6,12 @@ function GoalEditor({ name, goal, onSave }) {
   const [draft, setDraft] = useState(null);
   const value = draft ?? String(goal);
   const invalid = !/^\d+$/.test(value) || !validGoal(Number(value));
+  
   return <form className="pg-goal" onSubmit={event => {
     event.preventDefault();
     if (!invalid) { onSave(Number(value)); setDraft(null); }
   }}>
+    
     <label>Weekly goal <input aria-label={name + " weekly goal"} inputMode="numeric" value={value}
       aria-invalid={invalid} onChange={event => setDraft(event.target.value)}
       onKeyDown={event => { if (event.key === "Escape") setDraft(null); }} /></label>

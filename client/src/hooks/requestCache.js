@@ -60,10 +60,6 @@ function releaseRequest(key, entry) {
   }
 }
 
-/**
- * Remove a cache entry so the next getCachedRequest call fetches fresh data.
- * Safe to call even if the key is not in the cache.
- */
 export function invalidateCachedRequest(key) {
   const entry = requestCache.get(key);
   if (!entry) return;

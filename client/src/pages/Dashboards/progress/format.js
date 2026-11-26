@@ -13,8 +13,10 @@ export const validGoal = value => Number.isSafeInteger(value) && value > 0;
 export function comparison(points, median, calendar) {
   if (median == null) return "Not enough history";
   if (points == null) return "Comparison unavailable";
+
   const margin = median * calendar.nearFraction;
   let label = "Near";
+
   if (points > median + margin) label = "Above";
   if (points < median - margin) label = "Below";
   return `${label} your ${calendar.baselineWeeks}-week median (${number(median)} pts)`;
@@ -22,6 +24,7 @@ export function comparison(points, median, calendar) {
 
 // Bounds agree when missing days cannot change the answer.
 export function streaks(days) {
+  
   function count(includeUnknown) {
     let current = 0, longest = 0;
     for (const { activeDay } of days) {
@@ -30,6 +33,7 @@ export function streaks(days) {
     }
     return { current, longest };
   }
+  
   const low = count(false), high = count(true);
   function label(field) {
     if (!days.length) return "Unavailable";
